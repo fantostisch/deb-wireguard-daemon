@@ -1,0 +1,38 @@
+{
+  "PrivateKey": "6HKqxyJNEpx2dP9Y/uHwmuWWRHpPHi84ct31lnfdR1Q=",
+  "PublicKey": "f8MqewHcgTC/Q8Si+kxVBfzawc+iArkbA7PXjijA83s=",
+  "Users": {
+    "anonymous": {
+      "Name": "anonymous",
+      "Clients": {
+        "1": {
+          "name": "Some_name",
+          "private_key": "",
+          "public_key": "7Cq0Satdm6VnwYm4N9mmQeqpPaSVBvvbxpJtOZu+JhE=",
+          "ip": "10.0.0.2",
+          "created": "2020-05-26T18:40:59Z",
+          "modified": "2020-05-26T18:40:59Z",
+          "info": ""
+        },
+        "2": {
+          "name": "User_2",
+          "private_key": "MBOwTtanpAp80uDoCc42CQv28exngaaG+DCyIA3uY0I=",
+          "public_key": "VAw54Vw5RJNFrNYWH/X2LR35B9P80wkMxmS5dvbPOng=",
+          "ip": "10.0.0.3",
+          "created": "2020-06-28T04:29:35Z",
+          "modified": "2020-06-28T04:29:35Z",
+          "info": "ASD"
+        },
+        "3": {
+          "name": "User_3",
+          "private_key": "gIjT6rAxEbQButQPo7ZiowivA0V8I8xydT7MsUiabXk=",
+          "public_key": "zcgryQ5flhiEwYIe31o7d4OFmMBFx0OPyYn3xfAIqw0=",
+          "ip": "10.0.0.5",
+          "created": "2020-06-28T04:30:37Z",
+          "modified": "2020-06-28T04:30:37Z",
+          "info": "ASD"
+        }
+      }
+    }
+  }
+}

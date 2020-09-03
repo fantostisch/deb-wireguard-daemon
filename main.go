@@ -85,7 +85,7 @@ func NewServer() *Server {
 	if err != nil {
 		log.Print("Error init dir: ", err)
 	}
-	configPath := path.Join(*dataDir, "conf")
+	configPath := path.Join(*dataDir, "conf.json")
 	log.Print(configPath)
 	config := newServerConfig(configPath)
 
