@@ -80,10 +80,10 @@ func NewServer() *Server {
 	if err != nil {
 		log.Fatal("Error with those IPS:", err)
 	}
-	log.Print("IP Address: %s IP Network: %s", ipAddr, ipNet)
+	log.Printf("IP Address: %s IP Network: %s", ipAddr, ipNet)
 	err = os.Mkdir(*dataDir, 0700)
 	if err != nil {
-		log.Print("Error init dir: ", err)
+		log.Printf("Error creating directory: '%s'. Error message: %s", *dataDir, err)
 	}
 	configPath := path.Join(*dataDir, "conf.json")
 	log.Print(configPath)
