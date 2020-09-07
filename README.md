@@ -38,7 +38,7 @@ make
 
 Make sure UDP port 51820 is open.
 
-`sudo ./wireguard-daemon`
+`make run`
 
 To stop the wireguard-daemon press Ctrl+c.
 
@@ -60,7 +60,7 @@ To generate a public and public-private key pair run:
 
 ##### Manually adding a user
 
-To manually add a user modify conf.json. For an example take a look at [conf.example.json](conf.example.json).
+To manually add a user modify conf.json. For an example take a look at [conf.example.json](wireguard-daemon/conf.example.json).
 
 #### Manually creating a config
 

@@ -16,5 +16,4 @@ config
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
-wireguard-daemon
-conf.json
+/_bin/
