@@ -31,7 +31,7 @@ wg version # Test if WireGuard is successfully installed.
 git clone https://gitlab.com/fantostisch/wireguard-daemon.git
 cd wireguard-daemon
 go get # Install dependencies
-go build
+make
 ```
 
 ### Running

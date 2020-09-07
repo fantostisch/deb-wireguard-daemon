@@ -1,11 +1,15 @@
-APP=WireGuard_Surf
-# GO_BUILD_FLAGS=
+APP=wireguard-daemon
+SOURCES=$(wildcard *.go)
 
-all:
-	go build -o $(APP) .
+.PHONY: all fmt clean
 
-build:
-	go build --ldflags '-extldflags "-static"' -o $(APP) 
+all: $(APP)
+
+$(APP): $(SOURCES)
+	go build -o $(APP) $(SOURCES)
+
+fmt:
+	gofmt -w -d $(SOURCES)
 
 clean:
 	rm -rf $(APP)
