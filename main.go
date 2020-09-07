@@ -30,22 +30,21 @@ var (
 	//authUserHeader = kingpin.Flag("auth-user-header", "Header containing username").Default("X-Forwarded-User").String()
 	//maxNumberClientConfig = kingpin.Flag("max-number-client-config", "Max number of configs an client can use. 0 is unlimited").Default("0").Int()
 
-	tlsCertDir         = "."
-	tlsKeyDir          = "."
+	tlsCertDir = "."
+	tlsKeyDir  = "."
 	//wgLiName           = "wg0"
-	wgPort             = 51820
+	wgPort = 51820
 	//dataDir = "/Config/lib"
 	//natLink               = kingpin.Flag("nat-device", "Network interface to masquerade").Default("ens3").String()
-	dataDir = flag.String("data-dir","","Directory used for storage")
-	listenAddr = flag.String("listen-address", ":8080","Address to listen to")
-	clientIPRange  = flag.String("client-ip-range","10.0.0.0/8", "Client IP CIDR")
-	authUserHeader = flag.String("auth-user-header", "X-Forwarded-User","Header containing username")
-	natLink               = flag.String("nat-device", "ens3", "Network interface to masquerade")
-	wgLinkName   =  flag.String("wg-device-name","wg0", "WireGuard network device name")
+	dataDir        = flag.String("data-dir", "", "Directory used for storage")
+	listenAddr     = flag.String("listen-address", ":8080", "Address to listen to")
+	clientIPRange  = flag.String("client-ip-range", "10.0.0.0/8", "Client IP CIDR")
+	authUserHeader = flag.String("auth-user-header", "X-Forwarded-User", "Header containing username")
+	natLink        = flag.String("nat-device", "ens3", "Network interface to masquerade")
+	wgLinkName     = flag.String("wg-device-name", "wg0", "WireGuard network device name")
 	//wgPort             = flag.Int("wg-port",51820,"WireGuard VPN port" )
-	wgStatus = false;
+	wgStatus   = false
 	actuallink = wgLink{}
-
 )
 
 type contextKey string
@@ -132,7 +131,7 @@ func (serv *Server) UpInterface() error {
 	if err != nil {
 		log.Printf("Couldn't bring up %s", attrs.Name)
 	}
-	 wgStatus = true;
+	wgStatus = true
 	return nil
 }
 func (serv *Server) allocateIP() net.IP {
@@ -239,7 +238,7 @@ func (serv *Server) wgConfiguation() error {
 	}
 	return nil
 }
-func (serv *Server) natConfigure() error{
+func (serv *Server) natConfigure() error {
 	log.Print("Adding NAT / IP masquerading using nftables")
 	ns, err := netns.Get()
 
@@ -263,28 +262,28 @@ func (serv *Server) natConfigure() error{
 		Priority: nftables.ChainPriorityFilter,
 	})
 
-//	post := conn.AddChain(&nftables.Chain{
-//		Name:     "postrouting",
-//		Table:    nat,
-//		Type:     nftables.ChainTypeNAT,
-//		Hooknum:  nftables.ChainHookPostrouting,
-//		Priority: nftables.ChainPriorityNATSource,
-//	})
+	//	post := conn.AddChain(&nftables.Chain{
+	//		Name:     "postrouting",
+	//		Table:    nat,
+	//		Type:     nftables.ChainTypeNAT,
+	//		Hooknum:  nftables.ChainHookPostrouting,
+	//		Priority: nftables.ChainPriorityNATSource,
+	//	})
 
-//	conn.AddRule(&nftables.Rule{
-//		Table: nat,
-//		Chain: post,
-//		Exprs: []expr.Any{
-//			&expr.Meta{Key: expr.MetaKeyOIFNAME, Register: 1},
-//			&expr.Cmp{
-//				Op:       expr.CmpOpEq,
-//				Register: 1,
-//				Data:     ifname(*natLink),
-//			},
-//			&expr.Masq{},
-//		},
-//	})
-log.Print("NAT Ready")
+	//	conn.AddRule(&nftables.Rule{
+	//		Table: nat,
+	//		Chain: post,
+	//		Exprs: []expr.Any{
+	//			&expr.Meta{Key: expr.MetaKeyOIFNAME, Register: 1},
+	//			&expr.Cmp{
+	//				Op:       expr.CmpOpEq,
+	//				Register: 1,
+	//				Data:     ifname(*natLink),
+	//			},
+	//			&expr.Masq{},
+	//		},
+	//	})
+	log.Print("NAT Ready")
 	if err = conn.Flush(); err != nil {
 		return err
 	}
@@ -323,33 +322,33 @@ func (serv *Server) Start() error {
 		log.Print("Couldnt Configure interface ::", err)
 	}
 	err = serv.natConfigure()
-	if err != nil{
+	if err != nil {
 		log.Print("COuldnt configure NAT :: ", err)
 	}
 	return nil
 
 }
-func (serv *Server) Stop() error{
+func (serv *Server) Stop() error {
 	log.Print("Turning down link ::: ")
 	link, err := netlink.LinkByName(*wgLinkName)
-	if err != nil{
+	if err != nil {
 		log.Print("error getting link ::: ", err)
 	}
 
-		err = netlink.LinkSetDown(link)
-		if err != nil {
-			log.Print("Error removing the interface ::: ", err)
-			return  err
-		}
-		log.Print("Interface shutdown")
-		wgStatus = false;
-	
-	   return nil
+	err = netlink.LinkSetDown(link)
+	if err != nil {
+		log.Print("Error removing the interface ::: ", err)
+		return err
+	}
+	log.Print("Interface shutdown")
+	wgStatus = false
+
+	return nil
 }
 
 func main() {
 
-	flag.Usage = func(){
+	flag.Usage = func() {
 		flag.PrintDefaults()
 	}
 	flag.Parse()

@@ -2,9 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 	"io/ioutil"
+	"log"
 	"net"
 	"os"
 	"path/filepath"
@@ -30,6 +30,7 @@ type ClientConfig struct {
 	Modified   string `json:"modified"`
 	Info       string `json:"info"`
 }
+
 //----------Configuration: Generating a server configuration----------
 func newServerConfig(cfgPath string) *WgConf {
 	keys, err := wgtypes.GeneratePrivateKey()
@@ -60,6 +61,7 @@ func newServerConfig(cfgPath string) *WgConf {
 	}
 	return config
 }
+
 //----------Configuration: Writing on a file ----------
 func (config *WgConf) Write() error {
 	data, err := json.MarshalIndent(config, "", " ")
@@ -68,6 +70,7 @@ func (config *WgConf) Write() error {
 	}
 	return ioutil.WriteFile(config.configPath, data, 0600)
 }
+
 //----------Configuration: Getting user configuration and making one if doesn't exist ----------
 func (config *WgConf) GetUSerConfig(user string) *UserConf {
 	us, ok := config.Users[user]
@@ -81,6 +84,7 @@ func (config *WgConf) GetUSerConfig(user string) *UserConf {
 	}
 	return us
 }
+
 //----------Configuration: Creating a client and returning it----------
 func NewClientConfig(ip net.IP, Name, Info string) *ClientConfig {
 	keys, err := wgtypes.GeneratePrivateKey()
