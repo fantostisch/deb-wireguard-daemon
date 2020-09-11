@@ -34,6 +34,13 @@ go get # Install dependencies
 make
 ```
 
+### Set up NAT
+
+Execute the following and replace `eth0` with your primary network interface which you can find by executing `sudo ifconfig`.
+```sh
+sudo iptables -t nat -A POSTROUTING -s 10.0.0.0/8 -o eth0 -j MASQUERADE
+```
+
 ### Running
 
 Make sure UDP port 51820 is open.
@@ -41,13 +48,6 @@ Make sure UDP port 51820 is open.
 `make run`
 
 To stop the wireguard-daemon press Ctrl+c.
-
-### Set up NAT manually, automatically is not working yet.
-
-Execute the following and replace `eth0` with your primary network interface which you can find by executing `sudo ifconfig`.
-```sh
-sudo iptables -t nat -A POSTROUTING -s 10.0.0.0/8 -o eth0 -j MASQUERADE
-```
 
 ## Using the VPN:
 

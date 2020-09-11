@@ -5,9 +5,7 @@ import (
 	"crypto/x509"
 	"flag"
 	assetfs "github.com/elazarl/go-bindata-assetfs"
-	"github.com/google/nftables"
 	"github.com/vishvananda/netlink"
-	"github.com/vishvananda/netns"
 	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 	"io/ioutil"
@@ -238,57 +236,6 @@ func (serv *Server) wgConfiguation() error {
 	}
 	return nil
 }
-func (serv *Server) natConfigure() error {
-	log.Print("Adding NAT / IP masquerading using nftables")
-	ns, err := netns.Get()
-
-	conn := nftables.Conn{NetNS: int(ns)}
-
-	log.Print("Flushing nftable rulesets")
-	conn.FlushRuleset()
-
-	log.Print("Setting up nftable rules for ip masquerading")
-
-	nat := conn.AddTable(&nftables.Table{
-		Family: nftables.TableFamilyIPv4,
-		Name:   "nat",
-	})
-
-	conn.AddChain(&nftables.Chain{
-		Name:     "prerouting",
-		Table:    nat,
-		Type:     nftables.ChainTypeNAT,
-		Hooknum:  nftables.ChainHookPrerouting,
-		Priority: nftables.ChainPriorityFilter,
-	})
-
-	//	post := conn.AddChain(&nftables.Chain{
-	//		Name:     "postrouting",
-	//		Table:    nat,
-	//		Type:     nftables.ChainTypeNAT,
-	//		Hooknum:  nftables.ChainHookPostrouting,
-	//		Priority: nftables.ChainPriorityNATSource,
-	//	})
-
-	//	conn.AddRule(&nftables.Rule{
-	//		Table: nat,
-	//		Chain: post,
-	//		Exprs: []expr.Any{
-	//			&expr.Meta{Key: expr.MetaKeyOIFNAME, Register: 1},
-	//			&expr.Cmp{
-	//				Op:       expr.CmpOpEq,
-	//				Register: 1,
-	//				Data:     ifname(*natLink),
-	//			},
-	//			&expr.Masq{},
-	//		},
-	//	})
-	log.Print("NAT Ready")
-	if err = conn.Flush(); err != nil {
-		return err
-	}
-	return nil
-}
 
 func (serv *Server) reconfiguringWG() error {
 	log.Printf("Reconfiguring wireGuard interface: wg0")
@@ -321,13 +268,9 @@ func (serv *Server) Start() error {
 	if err != nil {
 		log.Print("Couldnt Configure interface ::", err)
 	}
-	err = serv.natConfigure()
-	if err != nil {
-		log.Print("COuldnt configure NAT :: ", err)
-	}
 	return nil
-
 }
+
 func (serv *Server) Stop() error {
 	log.Print("Turning down link ::: ")
 	link, err := netlink.LinkByName(*wgLinkName)
