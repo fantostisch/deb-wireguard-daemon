@@ -2,13 +2,14 @@ package main
 
 import (
 	"encoding/json"
-	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 	"io/ioutil"
 	"log"
 	"net"
 	"os"
 	"path/filepath"
 	"time"
+
+	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
 type WgConf struct {
@@ -17,10 +18,11 @@ type WgConf struct {
 	PublicKey  string
 	Users      map[string]*UserConf
 }
+
 type UserConf struct {
-	Name    string
 	Clients map[string]*ClientConfig
 }
+
 type ClientConfig struct {
 	Name       string `json:"name"`
 	PrivateKey string `json:"private_key"`
@@ -53,7 +55,6 @@ func newServerConfig(cfgPath string) *WgConf {
 	} else if os.IsNotExist(err) {
 		log.Print("No configuration file found  ::  Creating one ", cfgPath)
 		err = config.Write()
-
 	}
 	log.Print("PublicKey: ", config.PublicKey, "     PrivateKey: ", config.PrivateKey)
 	if err != nil {
@@ -72,12 +73,11 @@ func (config *WgConf) Write() error {
 }
 
 //----------Configuration: Getting user configuration and making one if doesn't exist ----------
-func (config *WgConf) GetUSerConfig(user string) *UserConf {
+func (config *WgConf) GetUserConfig(user string) *UserConf {
 	us, ok := config.Users[user]
 	if !ok {
-		log.Print("This user is not existing: ", user, " Making one righ now.....")
+		log.Print("This user does not exist: ", user, " Making it right now...")
 		us = &UserConf{
-			Name:    user,
 			Clients: make(map[string]*ClientConfig),
 		}
 		config.Users[user] = us
@@ -86,19 +86,19 @@ func (config *WgConf) GetUSerConfig(user string) *UserConf {
 }
 
 //----------Configuration: Creating a client and returning it----------
-func NewClientConfig(ip net.IP, Name, Info string) *ClientConfig {
+func NewClientConfig(ip net.IP, name, info string) *ClientConfig {
 	keys, err := wgtypes.GeneratePrivateKey()
 	if err != nil {
 		log.Fatal("Failed to generate keys :: ", err)
 	}
 	config := ClientConfig{
-		Name:       Name,
+		Name:       name,
 		PrivateKey: keys.String(),
 		PublicKey:  keys.PublicKey().String(),
 		IP:         ip,
 		Created:    time.Now().Format(time.RFC3339),
 		Modified:   time.Now().Format(time.RFC3339),
-		Info:       Info,
+		Info:       info,
 	}
 	return &config
 }

@@ -4,12 +4,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"flag"
-	assetfs "github.com/elazarl/go-bindata-assetfs"
-	"github.com/vishvananda/netlink"
-	"golang.zx2c4.com/wireguard/wgctrl"
-	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
+	"fmt"
 	"io/ioutil"
-	//	"github.com/google/nftables/expr"
 	"log"
 	"net"
 	"net/http"
@@ -17,35 +13,24 @@ import (
 	"path"
 	"path/filepath"
 	"sync"
+
+	assetfs "github.com/elazarl/go-bindata-assetfs"
+	"github.com/vishvananda/netlink"
+	"golang.zx2c4.com/wireguard/wgctrl"
+	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
 var (
-	//dataDir    = kingpin.Flag("data-dir", "Directory used for storage").Default("/Config/lib").String()
-	//listenAddr = kingpin.Flag("listen-address", "Address to listen to").Default(":8080").String()
-	//natEnabled            = kingpin.Flag("nat", "Whether NAT is enabled or not").Default("true").Bool()
-	//natLink               = kingpin.Flag("nat-device", "Network interface to masquerade").Default("wlp2s0").String()
-	//clientIPRange  = kingpin.Flag("client-ip-range", "Client IP CIDR").Default("10.0.0.0/8").String()
-	//authUserHeader = kingpin.Flag("auth-user-header", "Header containing username").Default("X-Forwarded-User").String()
-	//maxNumberClientConfig = kingpin.Flag("max-number-client-config", "Max number of configs an client can use. 0 is unlimited").Default("0").Int()
-
+	//nolint
 	tlsCertDir = "."
+	//nolint
 	tlsKeyDir  = "."
-	//wgLiName           = "wg0"
-	wgPort = 51820
-	//dataDir = "/Config/lib"
-	//natLink               = kingpin.Flag("nat-device", "Network interface to masquerade").Default("ens3").String()
-	dataDir        = flag.String("data-dir", "", "Directory used for storage")
-	listenAddr     = flag.String("listen-address", ":8080", "Address to listen to")
-	clientIPRange  = flag.String("client-ip-range", "10.0.0.0/8", "Client IP CIDR")
-	authUserHeader = flag.String("auth-user-header", "X-Forwarded-User", "Header containing username")
-	natLink        = flag.String("nat-device", "ens3", "Network interface to masquerade")
-	wgLinkName     = flag.String("wg-device-name", "wg0", "WireGuard network device name")
-	//wgPort             = flag.Int("wg-port",51820,"WireGuard VPN port" )
+	wgPort     = 51820
+	dataDir    = flag.String("data-dir", "", "Directory used for storage")
+	listenAddr = flag.String("listen-address", ":8080", "Address to listen to")
+	wgLinkName = flag.String("wg-device-name", "wg0", "WireGuard network device name")
 	wgStatus   = false
-	actuallink = wgLink{}
 )
-
-type contextKey string
 
 type Server struct {
 	serverConfPath string
@@ -67,11 +52,7 @@ func (w *wgLink) Attrs() *netlink.LinkAttrs {
 func (w *wgLink) Type() string {
 	return "wireguard"
 }
-func ifname(n string) []byte {
-	b := make([]byte, 16)
-	copy(b, n+"\x00")
-	return b
-}
+
 func NewServer() *Server {
 	ipAddr, ipNet, err := net.ParseCIDR("10.0.0.1/8")
 	if err != nil {
@@ -104,7 +85,6 @@ func (serv *Server) UpInterface() error {
 	link := wgLink{attrs: &attrs}
 	log.Print("------------------------------------------")
 	log.Print("Adding WireGuard device ", attrs.Name)
-	actuallink = link
 	err := netlink.LinkAdd(&link)
 	if os.IsExist(err) {
 		log.Printf("WireGuard interface %s already exists. REUSING. ", attrs.Name)
@@ -166,9 +146,7 @@ func (serv *Server) enableIPForward() error {
 	}
 
 	if string(content) == "0\n" {
-
 		log.Print("Enabling sys.net.ipv4.ip_forward - Success")
-
 		return ioutil.WriteFile(p, []byte("1"), 0600)
 	}
 
@@ -207,7 +185,6 @@ func (serv *Server) wgConfiguation() error {
 			log.Printf("User: %s, ClientID %s: , Publickey: %s AllowedIPS: %s", user, id, dev.PublicKey, peer.AllowedIPs)
 			peers = append(peers, peer)
 		}
-
 	}
 	//pers := time.Duration(21)
 	//ip := net.ParseIP("10.0.0.2/8")
@@ -243,16 +220,17 @@ func (serv *Server) reconfiguringWG() error {
 	err := serv.Config.Write()
 	if err != nil {
 		log.Fatal("Error Writing on configuration file ", err)
-
+		return err
 	}
 	err = serv.wgConfiguation()
 	if err != nil {
-		log.Printf("Error Configuring file ::", err)
+		log.Printf("Error Configuring file :: %s", err)
+		return err
 	}
 	return nil
 }
-func (serv *Server) Start() error {
 
+func (serv *Server) Start() error {
 	err := serv.UpInterface()
 	if err != nil {
 		return err
@@ -261,12 +239,13 @@ func (serv *Server) Start() error {
 	log.Print("Enabling IP Forward....")
 	err = serv.enableIPForward()
 	if err != nil {
-
 		log.Print("Couldnt enable IP Forwarding:  ", err)
+		return err
 	}
 	err = serv.wgConfiguation()
 	if err != nil {
 		log.Print("Couldnt Configure interface ::", err)
+		return err
 	}
 	return nil
 }
@@ -290,18 +269,23 @@ func (serv *Server) Stop() error {
 }
 
 func main() {
-
 	flag.Usage = func() {
 		flag.PrintDefaults()
 	}
 	flag.Parse()
 	s := NewServer()
 
-	s.Start()
-	s.StartAPI()
-
+	startErr := s.Start()
+	if startErr != nil {
+		fmt.Print("Error starting server: ", startErr)
+	}
+	startAPIErr := s.StartAPI()
+	if startAPIErr != nil {
+		fmt.Println("Error starting API: ", startAPIErr)
+	}
 }
 
+//nolint
 func getTlsConfig() *tls.Config {
 	caCertFile := filepath.Join(tlsCertDir, "ca.crt")
 	certFile := filepath.Join(tlsCertDir, "server.crt")

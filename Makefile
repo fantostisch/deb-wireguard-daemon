@@ -1,18 +1,30 @@
 APP=_bin/wireguard-daemon
 SOURCES=$(wildcard wireguard-daemon/*.go)
+SOURCES_NO_TESTS=$(filter-out $(wildcard wireguard-daemon/*_test.go),$(SOURCES))
 
-.PHONY: all fmt run clean
+.PHONY: build fmt lint check run test clean
 
-all: $(APP)
+build: $(APP)
 
-$(APP): $(SOURCES)
-	go build -o $(APP) $(SOURCES)
+$(APP): $(SOURCES_NO_TESTS)
+	go build -o $(APP) $(SOURCES_NO_TESTS)
 
-fmt:
-	gofmt -w -d $(SOURCES)
+fmt: $(SOURCES)
+	goimports -w -e -d $(SOURCES)
+
+lint: $(SOURCES)
+	golangci-lint run $(SOURCES)
+
+check: $(SOURCES)
+	! goimports -e -d $(SOURCES) | grep .
+	make build lint test
+	echo "Success"
 
 run: $(APP)
 	cd _bin && sudo ./wireguard-daemon
+
+test: $(SOURCES)
+	cd wireguard-daemon && go test
 
 clean:
 	rm -f $(APP)
