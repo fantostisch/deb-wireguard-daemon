@@ -4,12 +4,10 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
-	"net/http"
 	"os"
 	"path"
 	"sync"
 
-	assetfs "github.com/elazarl/go-bindata-assetfs"
 	"github.com/vishvananda/netlink"
 	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
@@ -21,7 +19,6 @@ type Server struct {
 	Config         *WgConf
 	IPAddr         net.IP
 	clientIPRange  *net.IPNet
-	assets         http.Handler
 }
 
 type wgLink struct {
@@ -50,14 +47,12 @@ func NewServer() *Server {
 	log.Print(configPath)
 	config := newServerConfig(configPath)
 
-	assets := http.FileServer(&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, AssetInfo: AssetInfo, Prefix: ""})
 	surf := Server{
 		serverConfPath: configPath,
 		mutex:          sync.RWMutex{},
 		Config:         config,
 		IPAddr:         ipAddr,
 		clientIPRange:  ipNet,
-		assets:         assets,
 	}
 	return &surf
 }

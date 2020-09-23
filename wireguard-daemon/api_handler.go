@@ -10,12 +10,6 @@ type APIHandler struct {
 	Server *Server
 }
 
-func (h APIHandler) index(w http.ResponseWriter, req *http.Request) {
-	log.Print("Serving single page app from URL", req.URL)
-	req.URL.Path = "/"
-	h.Server.assets.ServeHTTP(w, req)
-}
-
 // Get current username
 func (h APIHandler) identify(res http.ResponseWriter) {
 	var user = "anonymous" //todo
@@ -72,13 +66,6 @@ func (h APIHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var head string
 	head, req.URL.Path = ShiftPath(req.URL.Path)
 	switch head {
-	case "index":
-		switch req.Method {
-		case http.MethodGet:
-			h.index(w, req)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
 	case "identify":
 		switch req.Method {
 		case http.MethodGet:

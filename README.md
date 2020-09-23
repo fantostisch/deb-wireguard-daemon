@@ -80,7 +80,6 @@ Endpoint = <server ip>:51820
 ## API endpoints
 | Method | Url                                  | Data                                       | Description                                                                                                                        |
 |--------|--------------------------------------|--------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| GET    | /index                               |                                            |                                                                                                                                    |
 | GET    | /status                              |                                            |                                                                                                                                    |
 | GET    | /identify                            |                                            |                                                                                                                                    |
 | GET    | /user/{username}/clients             |                                            | List all of the clients of the user.                                                                                               |
