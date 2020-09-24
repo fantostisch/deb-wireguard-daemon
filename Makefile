@@ -17,7 +17,7 @@ lint: $(SOURCES)
 
 check: $(SOURCES)
 	! goimports -e -d $(SOURCES) | grep .
-	make build lint test
+	$(MAKE) build lint test
 	echo "Success"
 
 run: $(APP)
