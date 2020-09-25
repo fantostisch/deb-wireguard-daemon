@@ -30,7 +30,6 @@ sudo apt-get -y -t buster-backports install wireguard #or: sudo apt-get install 
 wg version # Test if WireGuard is successfully installed.
 git clone https://gitlab.com/fantostisch/wireguard-daemon.git
 cd wireguard-daemon
-go get # Install dependencies
 make
 ```
 
