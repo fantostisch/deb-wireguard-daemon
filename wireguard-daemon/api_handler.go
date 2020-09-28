@@ -1,23 +1,12 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 )
 
 type APIHandler struct {
 	Server *Server
-}
-
-// Get current username
-func (h APIHandler) identify(res http.ResponseWriter) {
-	var user = "anonymous" //todo
-	err := json.NewEncoder(res).Encode(struct{ User string }{user})
-	if err != nil {
-		log.Print(err)
-		res.WriteHeader(http.StatusInternalServerError)
-	}
 }
 
 func (h APIHandler) status(w http.ResponseWriter) {
@@ -66,13 +55,6 @@ func (h APIHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var head string
 	head, req.URL.Path = ShiftPath(req.URL.Path)
 	switch head {
-	case "identify":
-		switch req.Method {
-		case http.MethodGet:
-			h.identify(w)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
 	case "status":
 		switch req.Method {
 		case http.MethodGet:

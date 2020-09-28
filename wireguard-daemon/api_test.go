@@ -62,18 +62,6 @@ func testHTTPOkStatus(t *testing.T, statusCode int) {
 	}
 }
 
-func TestIdentify(t *testing.T) {
-	responseWriter := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/identify", nil)
-	apiRouter.ServeHTTP(responseWriter, req)
-
-	got := responseWriter.Body.String()
-	exp := "{\"User\":\"anonymous\"}\n"
-	if got != exp {
-		t.Errorf("Got: %v, Wanted: %v", got, exp)
-	}
-}
-
 func TestGetClients(t *testing.T) {
 	responseWriter := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodGet, "/user/peter/clients", nil)
