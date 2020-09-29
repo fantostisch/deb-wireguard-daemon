@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-
-	"github.com/skip2/go-qrcode"
 )
 
 type UserHandler struct {
@@ -17,7 +15,6 @@ type UserHandler struct {
 
 // Get all clients of a user.
 func (h UserHandler) getClients(w http.ResponseWriter, username string) {
-	log.Print("Getting Clients")
 	clients := map[string]*ClientConfig{}
 	userConfig := h.Server.Config.Users[username]
 	if userConfig != nil {
@@ -28,75 +25,24 @@ func (h UserHandler) getClients(w http.ResponseWriter, username string) {
 
 	err := json.NewEncoder(w).Encode(clients)
 
-	w.WriteHeader(http.StatusOK)
 	if err != nil {
 		log.Print(err)
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h UserHandler) getClient(w http.ResponseWriter, username string, id int) {
-	log.Print("Get One client")
-
-	usercfg := h.Server.Config.Users[username]
-	if usercfg == nil {
+	userConfig := h.Server.Config.Users[username]
+	if userConfig == nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	log.Print("Client :::")
-	client := usercfg.Clients[strconv.Itoa(id)]
+
+	client := userConfig.Clients[strconv.Itoa(id)]
 	if client == nil {
 		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-	log.Print("AllowedIP's Config")
-	allowedIPs := *wgAllowedIPs + ","
-
-	dns := ""
-	if *wgDNS != "" {
-		dns = fmt.Sprint("DNS = ", *wgDNS)
-	}
-
-	configData := fmt.Sprintf(`[Interface]
-%s
-Address = %s
-PrivateKey = %s
-[Peer]
-PublicKey = %s
-AllowedIPs = %s
-Endpoint = %s
-`, dns, client.IP.String(), client.PrivateKey, h.Server.Config.PublicKey, allowedIPs, *wgEndpoint)
-	log.Print(configData)
-	format := "config" //todo
-
-	if format == "qrcode" {
-		png, err := qrcode.Encode(configData, qrcode.Medium, 220)
-		if err != nil {
-			log.Print(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "image/png")
-		w.WriteHeader(http.StatusOK)
-		_, err = w.Write(png)
-		if err != nil {
-			log.Print(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		return
-	}
-
-	if format == "config" {
-		filename := fmt.Sprintf("%s.conf", filenameRe.ReplaceAllString(client.Name, "_"))
-		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
-		w.Header().Set("Content-Type", "application/config")
-		w.WriteHeader(http.StatusOK)
-		_, err := fmt.Fprint(w, configData)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
 		return
 	}
 
@@ -106,6 +52,7 @@ Endpoint = %s
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	w.WriteHeader(http.StatusOK)
 }
 
 //----------API-Endpoint: Creating client----------

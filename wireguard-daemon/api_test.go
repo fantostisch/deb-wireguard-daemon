@@ -2,10 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
-	"strings"
 	"testing"
 )
 
@@ -30,19 +30,29 @@ func TestNotEnoughSegments(t *testing.T) {
 	}
 }
 
+var ipAddr, ipNet, _ = net.ParseCIDR("10.0.0.1/8")
+
 var server = &Server{
+	IPAddr:        ipAddr,
+	clientIPRange: ipNet,
 	Config: &WgConf{
+		configPath: "/dev/null",
+		PrivateKey: "server_private_key",
+		PublicKey:  "server_public_key",
 		Users: map[string]*UserConf{
 			"peter": &UserConf{
 				Clients: map[string]*ClientConfig{
 					"1": &ClientConfig{
 						Name: "Client config 1",
+						IP:   net.IPv4(10, 0, 0, 1),
 					},
 					"2": &ClientConfig{
 						Name: "Client config 2",
+						IP:   net.IPv4(10, 0, 0, 2),
 					},
 					"3": &ClientConfig{
 						Name: "Client config 3",
+						IP:   net.IPv4(10, 0, 0, 3),
 					},
 				},
 			},
@@ -62,7 +72,7 @@ func testHTTPOkStatus(t *testing.T, statusCode int) {
 	}
 }
 
-func TestGetClients(t *testing.T) {
+func TestGetConfigs(t *testing.T) {
 	responseWriter := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodGet, "/user/peter/configs", nil)
 	apiRouter.ServeHTTP(responseWriter, req)
@@ -78,14 +88,18 @@ func TestGetClients(t *testing.T) {
 	}
 }
 
-func TestGetClient(t *testing.T) {
+func TestGetConfig(t *testing.T) {
 	responseWriter := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodGet, "/user/peter/configs/2", nil)
 	apiRouter.ServeHTTP(responseWriter, req)
 	testHTTPOkStatus(t, responseWriter.Code)
-	got := responseWriter.Body.String()
-	exp := "[Interface]"
-	if !strings.HasPrefix(got, exp) {
-		t.Errorf("Got: %v, Wanted to start with: %v", got, exp)
+	got := ClientConfig{}
+	err := json.NewDecoder(responseWriter.Body).Decode(&got)
+	if err != nil {
+		t.Errorf("Error decoding json: %s", err)
+	}
+	exp := *server.Config.Users["peter"].Clients["2"]
+	if !reflect.DeepEqual(got, exp) {
+		t.Errorf("Got: %v, Wanted: %v", got, exp)
 	}
 }

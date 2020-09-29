@@ -1,18 +1,9 @@
 package main
 
 import (
-	"flag"
 	"net/http"
 	"path"
-	"regexp"
 	"strings"
-)
-
-var (
-	wgEndpoint   = flag.String("wg-endpoint", "127.0.0.1:51820", "WireGuard endpoint address")
-	wgAllowedIPs = flag.String("wg-allowed-ips", "0.0.0.0/0", "WireGuard client allowed ips")
-	wgDNS        = flag.String("wg-dns", "8.8.8.8", "WireGuard client DNS server (optional)")
-	filenameRe   = regexp.MustCompile("[^a-zA-Z0-9]+")
 )
 
 type API struct {
