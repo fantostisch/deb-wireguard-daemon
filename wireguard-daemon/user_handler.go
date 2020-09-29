@@ -253,9 +253,9 @@ func (h UserHandler) deleteClient(w http.ResponseWriter, username string, client
 }
 
 func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, username string) {
-	clients, secondRemaining := ShiftPath(req.URL.Path)
+	configs, secondRemaining := ShiftPath(req.URL.Path)
 	clientID, _ := ShiftPath(secondRemaining)
-	if clients == "clients" {
+	if configs == "configs" {
 		if clientID == "" {
 			switch req.Method {
 			case http.MethodGet:

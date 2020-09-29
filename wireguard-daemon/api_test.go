@@ -64,7 +64,7 @@ func testHTTPOkStatus(t *testing.T, statusCode int) {
 
 func TestGetClients(t *testing.T) {
 	responseWriter := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/user/peter/clients", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/user/peter/configs", nil)
 	apiRouter.ServeHTTP(responseWriter, req)
 	testHTTPOkStatus(t, responseWriter.Code)
 	got := map[string]*ClientConfig{}
@@ -80,7 +80,7 @@ func TestGetClients(t *testing.T) {
 
 func TestGetClient(t *testing.T) {
 	responseWriter := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/user/peter/clients/2", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/user/peter/configs/2", nil)
 	apiRouter.ServeHTTP(responseWriter, req)
 	testHTTPOkStatus(t, responseWriter.Code)
 	got := responseWriter.Body.String()

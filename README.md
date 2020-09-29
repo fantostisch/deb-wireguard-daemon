@@ -80,11 +80,11 @@ Endpoint = <server ip>:51820
 | Method | Url                                  | Data                                       | Description                                                                                                                        |
 |--------|--------------------------------------|--------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
 | GET    | /status                              |                                            |                                                                                                                                    |
-| GET    | /user/{username}/clients             |                                            | List all of the clients of the user.                                                                                               |
-| POST   | /user/{username}/clients             | {"Name": "Some_name", "Info": "Some_info"} | Create client config with some name and some info. For now it generates both the private key and the public and it assignes an IP. |
-| GET    | /user/{username}/clients/{client id} |                                            | Show the first client of the user.                                                                                                 |
-| PUT    | /user/{username}/clients/{client id} | {"Name": "Some_name", "Info": "Some_info"} | Updates client config with some_name and some info.                                                                                |
-| DELETE | /user/{username}/clients/{client id} |                                            | Delete a user.                                                                                                                     |
+| GET    | /user/{username}/configs             |                                            | List all of the configs of the user.                                                                                               |
+| POST   | /user/{username}/configs             | {"Name": "Some_name", "Info": "Some_info"} | Create client config with some name and some info. For now it generates both the private key and the public and it assignes an IP. |
+| GET    | /user/{username}/configs/{config id} |                                            | Show the first config of the user.                                                                                                 |
+| PUT    | /user/{username}/configs/{config id} | {"Name": "Some_name", "Info": "Some_info"} | Updates client config with some_name and some info.                                                                                |
+| DELETE | /user/{username}/configs/{config id} |                                            | Delete a user.                                                                                                                     |
 
 todo: document how to get QR code \
 todo: document return values including errors
