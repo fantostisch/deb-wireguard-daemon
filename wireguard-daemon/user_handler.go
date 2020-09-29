@@ -13,8 +13,8 @@ type UserHandler struct {
 	Server *Server
 }
 
-// Get all clients of a user.
-func (h UserHandler) getClients(w http.ResponseWriter, username string) {
+// Get all configs of a user.
+func (h UserHandler) getConfigs(w http.ResponseWriter, username string) {
 	clients := map[string]*ClientConfig{}
 	userConfig := h.Server.Config.Users[username]
 	if userConfig != nil {
@@ -33,7 +33,7 @@ func (h UserHandler) getClients(w http.ResponseWriter, username string) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h UserHandler) getClient(w http.ResponseWriter, username string, id int) {
+func (h UserHandler) getConfig(w http.ResponseWriter, username string, id int) {
 	userConfig := h.Server.Config.Users[username]
 	if userConfig == nil {
 		w.WriteHeader(http.StatusNotFound)
@@ -55,8 +55,7 @@ func (h UserHandler) getClient(w http.ResponseWriter, username string, id int) {
 	w.WriteHeader(http.StatusOK)
 }
 
-//----------API-Endpoint: Creating client----------
-func (h UserHandler) createClient(w http.ResponseWriter, r *http.Request, username string) {
+func (h UserHandler) createConfig(w http.ResponseWriter, r *http.Request, username string) {
 	h.Server.mutex.Lock()
 	defer h.Server.mutex.Unlock()
 
@@ -127,7 +126,7 @@ func (h UserHandler) createClient(w http.ResponseWriter, r *http.Request, userna
 	}
 }
 
-func (h UserHandler) editClient(w http.ResponseWriter, req *http.Request, username string, clientID int) {
+func (h UserHandler) editConfig(w http.ResponseWriter, req *http.Request, username string, clientID int) {
 	usercfg := h.Server.Config.Users[username]
 	if usercfg == nil {
 		w.WriteHeader(http.StatusNotFound)
@@ -174,7 +173,7 @@ func (h UserHandler) editClient(w http.ResponseWriter, req *http.Request, userna
 	}
 }
 
-func (h UserHandler) deleteClient(w http.ResponseWriter, username string, clientID int) {
+func (h UserHandler) deleteConfig(w http.ResponseWriter, username string, clientID int) {
 	usercfg := h.Server.Config.Users[username]
 	if usercfg == nil {
 		w.WriteHeader(http.StatusNotFound)
@@ -206,9 +205,9 @@ func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, usernam
 		if clientID == "" {
 			switch req.Method {
 			case http.MethodGet:
-				h.getClients(w, username)
+				h.getConfigs(w, username)
 			case http.MethodPost:
-				h.createClient(w, req, username)
+				h.createConfig(w, req, username)
 			default:
 				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			}
@@ -220,11 +219,11 @@ func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, usernam
 			}
 			switch req.Method {
 			case http.MethodGet:
-				h.getClient(w, username, id)
+				h.getConfig(w, username, id)
 			case http.MethodPut:
-				h.editClient(w, req, username, id)
+				h.editConfig(w, req, username, id)
 			case http.MethodPost:
-				h.deleteClient(w, username, id)
+				h.deleteConfig(w, username, id)
 			default:
 				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			}
