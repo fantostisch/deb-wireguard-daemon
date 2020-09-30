@@ -23,7 +23,7 @@ Then execute:
 When using Debian Buster, Wireguard and Go need to be installed from backports, which needs to be enabled. [Instructions for enabling backports on Debian](https://backports.debian.org/Instructions/).
 
 ```sh
-sudo apt-get -y install linux-headers-amd64 #todo: architecture independent command
+sudo apt-get -y install linux-headers-$(dpkg --print-architecture)
 sudo apt-get -y -t buster-backports install golang-1.14-go #or: sudo apt-get -y install golang-1.14-go
 go version # Test if go is successfully installed.
 sudo apt-get -y -t buster-backports install wireguard #or: sudo apt-get install wireguard
