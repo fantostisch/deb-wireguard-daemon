@@ -59,33 +59,10 @@ func (h UserHandler) createConfig(w http.ResponseWriter, r *http.Request, userna
 	h.Server.mutex.Lock()
 	defer h.Server.mutex.Unlock()
 
-	log.Print("Creating client :: User ", username)
 	cli := h.Server.Config.GetUserConfig(username)
-	log.Print("User Config: ", cli.Clients)
 
-	//if maxNumberCliConfig > 3 {
-	//	if len(cli.Clients) >= maxNumberCliConfig {
-	//		log.Errorf("there too many configs ", cli.Name)
-	//		e := struct {
-	//			Error string
-	//		}{
-	//			Error: "Max number of configs: " + strconv.Itoa(maxNumberCliConfig),
-	//		}
-	//		w.WriteHeader(http.StatusBadRequest)
-	//		err := json.NewEncoder(w).Encode(e)
-	//		if err != nil {
-	//			log.Errorf("There was an API ERRROR - CREATE CLIENT ::", err)
-	//			w.WriteHeader(http.StatusBadRequest)
-	//			err := json.NewEncoder(w).Encode(e)
-	//			if err != nil {
-	//				log.Errorf("Error enocoding ::", err)
-	//				return
-	//			}
-	//			return
-	//		}
-	//		log.Print("decoding dthe body")
 	decoder := json.NewDecoder(r.Body)
-	//w.Header().Set("Content-Type", "application/json"; "charset=UTF-8")
+
 	client := &ClientConfig{}
 	err := decoder.Decode(&client)
 	if err != nil {
@@ -101,7 +78,7 @@ func (h UserHandler) createConfig(w http.ResponseWriter, r *http.Request, userna
 	for k := range cli.Clients {
 		n, err := strconv.Atoi(k)
 		if err != nil {
-			log.Print("THere was an error strc CONV :: ", err)
+			log.Print("There was an error strc CONV :: ", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
