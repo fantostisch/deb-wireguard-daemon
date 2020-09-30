@@ -19,7 +19,6 @@ var (
 	dataDir    = flag.String("data-dir", "", "Directory used for storage")
 	listenAddr = flag.String("listen-address", ":8080", "Address to listen to")
 	wgLinkName = flag.String("wg-device-name", "wg0", "WireGuard network device name")
-	wgStatus   = false
 )
 
 func main() {

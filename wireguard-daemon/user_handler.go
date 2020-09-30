@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 type UserHandler struct {
@@ -25,28 +24,6 @@ func (h UserHandler) getConfigs(w http.ResponseWriter, username string) {
 
 	err := json.NewEncoder(w).Encode(clients)
 
-	if err != nil {
-		log.Print(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-}
-
-func (h UserHandler) getConfig(w http.ResponseWriter, username string, id int) {
-	userConfig := h.Server.Config.Users[username]
-	if userConfig == nil {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	client := userConfig.Clients[strconv.Itoa(id)]
-	if client == nil {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	err := json.NewEncoder(w).Encode(client)
 	if err != nil {
 		log.Print(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -103,53 +80,6 @@ func (h UserHandler) createConfig(w http.ResponseWriter, r *http.Request, userna
 	}
 }
 
-func (h UserHandler) editConfig(w http.ResponseWriter, req *http.Request, username string, clientID int) {
-	usercfg := h.Server.Config.Users[username]
-	if usercfg == nil {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	client := usercfg.Clients[strconv.Itoa(clientID)]
-	if client == nil {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	cfg := ClientConfig{}
-
-	if err := json.NewDecoder(req.Body).Decode(&cfg); err != nil {
-		log.Print("Error parsing request: ", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	log.Printf("EditClient: %#v", cfg)
-
-	if cfg.Name != "" {
-		client.Name = cfg.Name
-	}
-
-	if cfg.Info != "" {
-		client.Info = cfg.Info
-	}
-
-	client.Modified = time.Now().Format(time.RFC3339)
-
-	reconfigureErr := h.Server.reconfiguringWG()
-	if reconfigureErr != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(client); err != nil {
-		log.Print(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-}
-
 func (h UserHandler) deleteConfig(w http.ResponseWriter, username string, clientID int) {
 	usercfg := h.Server.Config.Users[username]
 	if usercfg == nil {
@@ -195,10 +125,6 @@ func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, usernam
 				return
 			}
 			switch req.Method {
-			case http.MethodGet:
-				h.getConfig(w, username, id)
-			case http.MethodPut:
-				h.editConfig(w, req, username, id)
 			case http.MethodPost:
 				h.deleteConfig(w, username, id)
 			default:

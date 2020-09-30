@@ -107,7 +107,6 @@ func (serv *Server) UpInterface() error {
 	if err != nil {
 		log.Printf("Couldn't bring up %s", attrs.Name)
 	}
-	wgStatus = true
 	return nil
 }
 
@@ -243,7 +242,5 @@ func (serv *Server) Stop() error {
 		return err
 	}
 	log.Print("Interface shutdown")
-	wgStatus = false
-
 	return nil
 }

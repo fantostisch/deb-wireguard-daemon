@@ -61,7 +61,6 @@ var server = &Server{
 }
 
 var apiRouter = API{
-	APIHandler:  APIHandler{Server: server},
 	UserHandler: UserHandler{Server: server},
 }
 
@@ -83,22 +82,6 @@ func TestGetConfigs(t *testing.T) {
 		t.Errorf("Error decoding json: %s", err)
 	}
 	exp := server.Config.Users["peter"].Clients
-	if !reflect.DeepEqual(got, exp) {
-		t.Errorf("Got: %v, Wanted: %v", got, exp)
-	}
-}
-
-func TestGetConfig(t *testing.T) {
-	responseWriter := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/user/peter/configs/2", nil)
-	apiRouter.ServeHTTP(responseWriter, req)
-	testHTTPOkStatus(t, responseWriter.Code)
-	got := ClientConfig{}
-	err := json.NewDecoder(responseWriter.Body).Decode(&got)
-	if err != nil {
-		t.Errorf("Error decoding json: %s", err)
-	}
-	exp := *server.Config.Users["peter"].Clients["2"]
 	if !reflect.DeepEqual(got, exp) {
 		t.Errorf("Got: %v, Wanted: %v", got, exp)
 	}

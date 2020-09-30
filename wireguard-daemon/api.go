@@ -7,7 +7,6 @@ import (
 )
 
 type API struct {
-	APIHandler  APIHandler
 	UserHandler UserHandler
 }
 
@@ -32,13 +31,12 @@ func (h API) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		req.URL.Path = remainingAfterUser
 		h.UserHandler.ServeHTTP(w, req, username)
 	default:
-		h.APIHandler.ServeHTTP(w, req)
+		http.NotFound(w, req)
 	}
 }
 
 func (serv *Server) StartAPI() error {
 	var router http.Handler = API{
-		APIHandler:  APIHandler{Server: serv},
 		UserHandler: UserHandler{Server: serv},
 	}
 	return http.ListenAndServe(*listenAddr, router)

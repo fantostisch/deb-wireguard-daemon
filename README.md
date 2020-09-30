@@ -79,11 +79,8 @@ Endpoint = <server ip>:51820
 ## API endpoints
 | Method | Url                                  | Data                                       | Description                                                                                                                        |
 |--------|--------------------------------------|--------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| GET    | /status                              |                                            |                                                                                                                                    |
 | GET    | /user/{username}/configs             |                                            | List all of the configs of the user.                                                                                               |
 | POST   | /user/{username}/configs             | {"Name": "Some_name", "Info": "Some_info"} | Create client config with some name and some info. For now it generates both the private key and the public and it assignes an IP. |
-| GET    | /user/{username}/configs/{config id} |                                            | Show specific config of the user.                                                                                                  |
-| PUT    | /user/{username}/configs/{config id} | {"Name": "Some_name", "Info": "Some_info"} | Updates client config with some_name and some info.                                                                                |
 | DELETE | /user/{username}/configs/{config id} |                                            | Delete a client config.                                                                                                            |
 
 todo: document return values including errors
