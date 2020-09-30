@@ -125,7 +125,7 @@ func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, usernam
 				return
 			}
 			switch req.Method {
-			case http.MethodPost:
+			case http.MethodDelete:
 				h.deleteConfig(w, username, id)
 			default:
 				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
