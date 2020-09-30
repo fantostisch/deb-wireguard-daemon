@@ -8,7 +8,6 @@ import (
 	"path"
 	"sync"
 
-	"github.com/vishvananda/netlink"
 	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
@@ -19,18 +18,6 @@ type Server struct {
 	Config         *WgConf
 	IPAddr         net.IP
 	clientIPRange  *net.IPNet
-}
-
-type wgLink struct {
-	attrs *netlink.LinkAttrs
-}
-
-func (w *wgLink) Attrs() *netlink.LinkAttrs {
-	return w.attrs
-}
-
-func (w *wgLink) Type() string {
-	return "wireguard"
 }
 
 func NewServer() *Server {
@@ -58,13 +45,8 @@ func NewServer() *Server {
 }
 
 func (serv *Server) Start() error {
-	err := serv.UpInterface()
-	if err != nil {
-		return err
-	}
-	log.Print("------------------------------------------")
 	log.Print("Enabling IP Forward....")
-	err = serv.enableIPForward()
+	err := serv.enableIPForward()
 	if err != nil {
 		log.Print("Couldn't enable IP Forwarding: ", err)
 		return err
@@ -74,40 +56,10 @@ func (serv *Server) Start() error {
 		log.Print("Couldn't configure interface: ", err)
 		return err
 	}
-	return nil
-}
 
-func (serv *Server) UpInterface() error {
-	attrs := netlink.NewLinkAttrs()
-	attrs.Name = *wgLinkName
-	link := wgLink{attrs: &attrs}
-	log.Print("------------------------------------------")
-	log.Print("Adding WireGuard device ", attrs.Name)
-	err := netlink.LinkAdd(&link)
-	if os.IsExist(err) {
-		log.Printf("WireGuard interface %s already exists. Reusing interface. ", attrs.Name)
-	} else if err != nil {
-		log.Print("Problem with interface: ", err)
-		return nil
-	}
-	log.Print("------------------------------------------")
-	log.Print("Setting up IP address to wireguard device: ", serv.clientIPRange)
-	addr, _ := netlink.ParseAddr("10.0.0.1/8")
-	err = netlink.AddrAdd(&link, addr)
-	if os.IsExist(err) {
-		log.Printf("WireGuard interface %s already has the requested address: ", serv.clientIPRange)
-	} else if err != nil {
-		log.Print(err)
-		return err
-	}
-	log.Print("------------------------------------------")
-	log.Print("Bringing up wireguard device: ", attrs.Name)
-	err = netlink.LinkSetUp(&link)
+	err = ExecScript("start.sh")
 
-	if err != nil {
-		log.Printf("Couldn't bring up %s", attrs.Name)
-	}
-	return nil
+	return err
 }
 
 func (serv *Server) allocateIP() net.IP {
@@ -153,7 +105,6 @@ func (serv *Server) enableIPForward() error {
 }
 
 func (serv *Server) wgConfiguration() error {
-	log.Print("------------------------------------------")
 	log.Print("Configuring WireGuard")
 	wg, err := wgctrl.New()
 	if err != nil {
@@ -174,7 +125,8 @@ func (serv *Server) wgConfiguration() error {
 				log.Print("Couldn't add public key to peer: ", err)
 			}
 			AllowedIPs := make([]net.IPNet, 1)
-			AllowedIPs[0] = *netlink.NewIPNet(dev.IP)
+			amountOfBitsInIPv4Address := 32
+			AllowedIPs[0] = net.IPNet{IP: dev.IP, Mask: net.CIDRMask(amountOfBitsInIPv4Address, amountOfBitsInIPv4Address)}
 			peer := wgtypes.PeerConfig{
 				PublicKey:         pbkey,
 				ReplaceAllowedIPs: true,
@@ -185,20 +137,7 @@ func (serv *Server) wgConfiguration() error {
 			peers = append(peers, peer)
 		}
 	}
-	//pers := time.Duration(21)
-	//ip := net.ParseIP("10.0.0.2/8")
-	//peer_key, err := wgtypes.ParseKey("hY6dXQboU1KRwUZ/UGFecIw6JKN97/RO6wQDkWA0MXA=")
-	//wgAllowedIPs := make([]net.IPNet,1)
-	//wgAllowedIPs[0] = *netlink.NewIPNet(ip)
-	//peerA := wgtypes.PeerConfig{
-	//	PublicKey:         peer_key,
-	//	ReplaceAllowedIPs: false,
-	//	PersistentKeepaliveInterval: &pers,
-	//
-	//}
 
-	//peers = append(peers, peerA)
-	//log.Print("successfuly added ME")
 	cfg := wgtypes.Config{
 		PrivateKey:   &keys,
 		ListenPort:   &wgPort,
@@ -230,17 +169,6 @@ func (serv *Server) reconfiguringWG() error {
 }
 
 func (serv *Server) Stop() error {
-	log.Print("Turning down link: ")
-	link, err := netlink.LinkByName(*wgLinkName)
-	if err != nil {
-		log.Print("Error getting link: ", err)
-	}
-
-	err = netlink.LinkSetDown(link)
-	if err != nil {
-		log.Print("Error removing interface: ", err)
-		return err
-	}
-	log.Print("Interface shutdown")
-	return nil
+	err := ExecScript("stop.sh")
+	return err
 }

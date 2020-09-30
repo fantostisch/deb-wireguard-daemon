@@ -30,7 +30,13 @@ sudo apt-get -y -t buster-backports install wireguard #or: sudo apt-get install 
 wg version # Test if WireGuard is successfully installed.
 git clone https://gitlab.com/fantostisch/wireguard-daemon.git
 cd wireguard-daemon
+sh scripts/setup.sh wg0
 make
+```
+
+### Uninstall
+```sh
+sh scripts/uninstall.sh wg0
 ```
 
 ### Set up NAT
