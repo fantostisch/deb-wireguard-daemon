@@ -28,6 +28,7 @@ sudo apt-get -y -t buster-backports install golang-1.14-go #or: sudo apt-get -y 
 go version # Test if go is successfully installed.
 sudo apt-get -y -t buster-backports install wireguard #or: sudo apt-get install wireguard
 wg version # Test if WireGuard is successfully installed.
+sudo apt-get install -y iproute2
 git clone https://gitlab.com/fantostisch/wireguard-daemon.git
 cd wireguard-daemon
 sh scripts/setup.sh wg0
