@@ -3,9 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"net"
 	"net/http"
-	"strconv"
+	"net/url"
+
+	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
 type UserHandler struct {
@@ -15,118 +17,169 @@ type UserHandler struct {
 // Get all configs of a user.
 func (h UserHandler) getConfigs(w http.ResponseWriter, username string) {
 	clients := map[string]*ClientConfig{}
-	userConfig := h.Server.Config.Users[username]
-	if userConfig != nil {
-		clients = userConfig.Clients
-	} else {
-		log.Print("This user does not have clients")
-	}
 
-	err := json.NewEncoder(w).Encode(clients)
-
-	if err != nil {
-		log.Print(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-}
-
-func (h UserHandler) createConfig(w http.ResponseWriter, r *http.Request, username string) {
 	h.Server.mutex.Lock()
 	defer h.Server.mutex.Unlock()
 
-	cli := h.Server.Config.GetUserConfig(username)
+	userConfig := h.Server.Config.Users[username]
+	if userConfig != nil {
+		clients = userConfig.Clients
+	}
 
-	decoder := json.NewDecoder(r.Body)
-
-	client := &ClientConfig{}
-	err := decoder.Decode(&client)
-	if err != nil {
-		log.Print(err)
-		w.WriteHeader(http.StatusBadRequest)
+	if err := json.NewEncoder(w).Encode(clients); err != nil {
+		message := fmt.Sprintf("Error encoding response as JSON: %s", err)
+		http.Error(w, message, http.StatusInternalServerError)
 		return
 	}
-	if client.Name == "" {
-		log.Print("No CLIENT NAME found.....USING DEFAULT...\"unnamed Client\"")
-		client.Name = "Unnamed Client"
-	}
-	i := 0
-	for k := range cli.Clients {
-		n, err := strconv.Atoi(k)
-		if err != nil {
-			log.Print("There was an error strc CONV :: ", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		if n > i {
-			i = n
-		}
-	}
-	i++
-	log.Print("Allocating IP")
+	w.WriteHeader(http.StatusOK)
+}
+
+type createConfigRequest struct {
+	Name string `json:"name"`
+	Info string `json:"info"`
+}
+
+type createConfigAndKeyPairResponse struct {
+	ClientPrivateKey string `json:"clientPrivateKey"`
+	IP               net.IP `json:"ip"`
+	ServerPublicKey  string `json:"serverPublicKey"`
+}
+
+type createConfigResponse struct {
+	IP              net.IP `json:"ip"`
+	ServerPublicKey string `json:"serverPublicKey"`
+}
+
+func (h UserHandler) newConfig(username string, publicKey string, name string, info string) createConfigResponse {
+	h.Server.mutex.Lock()
+	defer h.Server.mutex.Unlock()
+
+	userConfig := h.Server.Config.GetUserConfig(username)
+
 	ip := h.Server.allocateIP()
-	log.Print("Creating Client Config")
-	client = NewClientConfig(ip, client.Name, client.Info)
-	cli.Clients[strconv.Itoa(i)] = client
-	err = h.Server.reconfiguringWG()
-	if err != nil {
-		log.Print("error Reconfiguring :: ", err)
-	}
-	err = json.NewEncoder(w).Encode(client)
-	if err != nil {
-		log.Print(err)
-		w.WriteHeader(http.StatusInternalServerError)
+	config := NewClientConfig(name, info, ip)
+
+	userConfig.Clients[publicKey] = &config
+
+	return createConfigResponse{
+		IP:              config.IP,
+		ServerPublicKey: h.Server.Config.PublicKey,
 	}
 }
 
-func (h UserHandler) deleteConfig(w http.ResponseWriter, username string, clientID int) {
-	usercfg := h.Server.Config.Users[username]
-	if usercfg == nil {
-		w.WriteHeader(http.StatusNotFound)
+func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username string, req createConfigRequest) {
+	clientPrivateKey, err := wgtypes.GeneratePrivateKey()
+	if err != nil {
+		message := fmt.Sprintf("Error generating private key: %s", err)
+		http.Error(w, message, http.StatusInternalServerError)
+		return
+	}
+	clientPublicKey := clientPrivateKey.PublicKey()
+	createConfigResponse := h.newConfig(username, clientPublicKey.String(), req.Name, req.Info)
+	response := createConfigAndKeyPairResponse{
+		ClientPrivateKey: clientPrivateKey.String(),
+		IP:               createConfigResponse.IP,
+		ServerPublicKey:  createConfigResponse.ServerPublicKey,
+	}
+
+	if err := h.Server.reconfigureWG(); err != nil {
+		message := fmt.Sprintf("Error reconfiguring WireGuard: %s", err)
+		http.Error(w, message, http.StatusInternalServerError)
 		return
 	}
 
-	client := strconv.Itoa(clientID)
-	if usercfg.Clients[client] == nil {
-		w.WriteHeader(http.StatusNotFound)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		message := fmt.Sprintf("Error encoding response as JSON: %s", err)
+		http.Error(w, message, http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h UserHandler) createConfig(w http.ResponseWriter, username string, publicKey string, req createConfigRequest) {
+	response := h.newConfig(username, publicKey, req.Name, req.Info)
+
+	if err := h.Server.reconfigureWG(); err != nil {
+		message := fmt.Sprintf("Error reconfiguring WireGuard: %s", err)
+		http.Error(w, message, http.StatusInternalServerError)
 		return
 	}
 
-	delete(usercfg.Clients, client)
-	reconfigureErr := h.Server.reconfiguringWG()
-	if reconfigureErr != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		message := fmt.Sprintf("Error encoding response as JSON: %s", err)
+		http.Error(w, message, http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h UserHandler) deleteConfig(w http.ResponseWriter, username string, publicKey string) {
+	h.Server.mutex.Lock()
+	defer h.Server.mutex.Unlock()
+	userConfig := h.Server.Config.Users[username]
+	if userConfig == nil {
+		http.Error(w, fmt.Sprintf("User '%s' not found", username), http.StatusNotFound)
 		return
 	}
 
-	log.Print("user", username, " ::: Deleted client:", client)
+	if userConfig.Clients[publicKey] == nil {
+		message := fmt.Sprintf("Config with public key '%s' not found for user '%s", publicKey, username)
+		http.Error(w, message, http.StatusNotFound)
+		return
+	}
+
+	delete(userConfig.Clients, publicKey)
+
+	if err := h.Server.reconfigureWG(); err != nil {
+		message := fmt.Sprintf("Error reconfiguring WireGuard: %s", err)
+		http.Error(w, message, http.StatusInternalServerError)
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, username string) {
-	configs, secondRemaining := ShiftPath(req.URL.Path)
-	clientID, _ := ShiftPath(secondRemaining)
-	if configs == "configs" {
-		if clientID == "" {
+func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, remainingURL string, username string) {
+	config, secondRemaining := ShiftPath(remainingURL)
+	if config == "config" {
+		receivedPublicKeyEscaped, _ := ShiftPath(secondRemaining)
+		if receivedPublicKeyEscaped == "" {
 			switch req.Method {
 			case http.MethodGet:
 				h.getConfigs(w, username)
 			case http.MethodPost:
-				h.createConfig(w, req, username)
+				createRequest := createConfigRequest{}
+				if err := json.NewDecoder(req.Body).Decode(&createRequest); err != nil {
+					http.Error(w, fmt.Sprintf("Could not decode request body: %s \n %s", err, req.Body), http.StatusBadRequest)
+					return
+				}
+				h.createConfigGenerateKeyPair(w, username, createRequest)
 			default:
 				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+				return
 			}
 		} else {
-			id, err := strconv.Atoi(clientID)
+			receivedPublicKey, err := url.PathUnescape(receivedPublicKeyEscaped)
 			if err != nil {
-				http.Error(w, fmt.Sprintf("Invalid user id: '%s'", clientID), http.StatusBadRequest)
+				message := fmt.Sprintf("Public key '%s' was not properly escaped: %s", receivedPublicKey, err)
+				http.Error(w, message, http.StatusBadRequest)
+				return
+			}
+			publicKey, err := wgtypes.ParseKey(receivedPublicKey)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("Invalid public key: '%s'. %s", receivedPublicKey, err), http.StatusBadRequest)
 				return
 			}
 			switch req.Method {
+			case http.MethodPost:
+				createRequest := createConfigRequest{}
+				if err := json.NewDecoder(req.Body).Decode(&createRequest); err != nil {
+					http.Error(w, fmt.Sprintf("Could not decode request body: %s \n %s", err, req.Body), http.StatusBadRequest)
+					return
+				}
+				h.createConfig(w, username, publicKey.String(), createRequest)
 			case http.MethodDelete:
-				h.deleteConfig(w, username, id)
+				h.deleteConfig(w, username, publicKey.String())
 			default:
 				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			}

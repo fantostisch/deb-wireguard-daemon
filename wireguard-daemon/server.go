@@ -7,17 +7,15 @@ import (
 	"os"
 	"path"
 	"sync"
-
-	"golang.zx2c4.com/wireguard/wgctrl"
-	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
 type Server struct {
 	serverConfPath string
 	mutex          sync.RWMutex
-	Config         *WgConf
+	Config         *Configuration
 	IPAddr         net.IP
 	clientIPRange  *net.IPNet
+	configureWG    func(s *Server) error
 }
 
 func NewServer() *Server {
@@ -40,18 +38,19 @@ func NewServer() *Server {
 		Config:         config,
 		IPAddr:         ipAddr,
 		clientIPRange:  ipNet,
+		configureWG:    configureWG,
 	}
 	return &surf
 }
 
 func (serv *Server) Start() error {
 	log.Print("Enabling IP Forward....")
-	err := serv.enableIPForward()
+	err := serv.enableIPForwarding()
 	if err != nil {
 		log.Print("Couldn't enable IP Forwarding: ", err)
 		return err
 	}
-	err = serv.wgConfiguration()
+	err = serv.configureWG(serv)
 	if err != nil {
 		log.Print("Couldn't configure interface: ", err)
 		return err
@@ -80,7 +79,6 @@ func (serv *Server) allocateIP() net.IP {
 			}
 		}
 		if !allocated[ip.String()] {
-			log.Print("Allocated IP: ", ip)
 			return ip
 		}
 	}
@@ -88,7 +86,7 @@ func (serv *Server) allocateIP() net.IP {
 	return nil
 }
 
-func (serv *Server) enableIPForward() error {
+func (serv *Server) enableIPForwarding() error {
 	p := "/proc/sys/net/ipv4/ip_forward"
 
 	content, err := ioutil.ReadFile(p)
@@ -97,70 +95,19 @@ func (serv *Server) enableIPForward() error {
 	}
 
 	if string(content) == "0\n" {
-		log.Print("Enabling sys.net.ipv4.ip_forward - Success")
 		return ioutil.WriteFile(p, []byte("1"), 0600)
 	}
 
 	return nil
 }
 
-func (serv *Server) wgConfiguration() error {
-	log.Print("Configuring WireGuard")
-	wg, err := wgctrl.New()
-	if err != nil {
-		log.Print("Error configuring WireGuard: ", err)
-	}
-	log.Print("Adding private key")
-	keys, err := wgtypes.ParseKey(serv.Config.PrivateKey)
-	if err != nil {
-		log.Print("Couldn't add private key: ", err)
-	}
-	log.Print("Private key successfully added -", serv.Config.PrivateKey)
-	peers := make([]wgtypes.PeerConfig, 0)
-	for user, cfg := range serv.Config.Users {
-		for id, dev := range cfg.Clients {
-			pbkey, err := wgtypes.ParseKey(dev.PublicKey)
-			log.Print("Public key to client - Added")
-			if err != nil {
-				log.Print("Couldn't add public key to peer: ", err)
-			}
-			AllowedIPs := make([]net.IPNet, 1)
-			amountOfBitsInIPv4Address := 32
-			AllowedIPs[0] = net.IPNet{IP: dev.IP, Mask: net.CIDRMask(amountOfBitsInIPv4Address, amountOfBitsInIPv4Address)}
-			peer := wgtypes.PeerConfig{
-				PublicKey:         pbkey,
-				ReplaceAllowedIPs: true,
-				AllowedIPs:        AllowedIPs,
-			}
-			log.Printf("Adding user ")
-			log.Printf("User: %s, ClientID %s: , Publickey: %s AllowedIPS: %s", user, id, dev.PublicKey, peer.AllowedIPs)
-			peers = append(peers, peer)
-		}
-	}
-
-	cfg := wgtypes.Config{
-		PrivateKey:   &keys,
-		ListenPort:   &wgPort,
-		ReplacePeers: true,
-		Peers:        peers,
-	}
-	err = wg.ConfigureDevice("wg0", cfg)
-	if err != nil {
-		log.Fatal("Error configuring device ::", err)
-		return err
-	}
-	return nil
-}
-
-func (serv *Server) reconfiguringWG() error {
-	log.Printf("Reconfiguring WireGuard interface: wg0")
-
+func (serv *Server) reconfigureWG() error {
 	err := serv.Config.Write()
 	if err != nil {
 		log.Fatal("Error writing configuration file: ", err)
 		return err
 	}
-	err = serv.wgConfiguration()
+	err = serv.configureWG(serv)
 	if err != nil {
 		log.Printf("Error configuring file: %s", err)
 		return err

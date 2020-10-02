@@ -12,48 +12,45 @@ import (
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
-type WgConf struct {
+type Configuration struct {
 	configPath string
 	PrivateKey string
 	PublicKey  string
-	Users      map[string]*UserConf
+	Users      map[string]*UserConfig
 }
 
-type UserConf struct {
+type UserConfig struct {
 	Clients map[string]*ClientConfig
 }
 
 type ClientConfig struct {
-	Name       string `json:"name"`
-	PrivateKey string `json:"private_key"`
-	PublicKey  string `json:"public_key"`
-	IP         net.IP `json:"ip"`
-	Created    string `json:"created"`
-	Modified   string `json:"modified"`
-	Info       string `json:"info"`
+	Name     string `json:"name"`
+	Info     string `json:"info"`
+	IP       net.IP `json:"ip"`
+	Modified string `json:"modified"`
 }
 
-//----------Configuration: Generating a server configuration----------
-func newServerConfig(cfgPath string) *WgConf {
+// Generate server configuration
+func newServerConfig(cfgPath string) *Configuration {
 	keys, err := wgtypes.GeneratePrivateKey()
 	if err != nil {
 		log.Panic("Fatal", err)
 	}
-	config := &WgConf{
+	config := &Configuration{
 		configPath: cfgPath,
 		PrivateKey: keys.String(),
 		PublicKey:  keys.PublicKey().String(),
-		Users:      make(map[string]*UserConf),
+		Users:      make(map[string]*UserConfig),
 	}
 	file, err := os.Open(filepath.Clean(cfgPath))
 	if err == nil {
 		if err = json.NewDecoder(file).Decode(config); err != nil {
-			log.Fatal("Failing to decode :: ", err)
+			log.Fatal("Failing to decode: ", err)
 		}
 		log.Print("Read server config from file : ", cfgPath)
 		log.Print("------------------------------------------")
 	} else if os.IsNotExist(err) {
-		log.Print("No configuration file found  ::  Creating one ", cfgPath)
+		log.Print("No configuration file found. Creating one ", cfgPath)
 		err = config.Write()
 	}
 	log.Print("PublicKey: ", config.PublicKey, "     PrivateKey: ", config.PrivateKey)
@@ -63,21 +60,20 @@ func newServerConfig(cfgPath string) *WgConf {
 	return config
 }
 
-//----------Configuration: Writing on a file ----------
-func (config *WgConf) Write() error {
-	data, err := json.MarshalIndent(config, "", " ")
+// Write config
+func (config *Configuration) Write() error {
+	data, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
 		return err
 	}
 	return ioutil.WriteFile(config.configPath, data, 0600)
 }
 
-//----------Configuration: Getting user configuration and making one if doesn't exist ----------
-func (config *WgConf) GetUserConfig(user string) *UserConf {
+// Get user configuration, create one if it doesn't exist
+func (config *Configuration) GetUserConfig(user string) *UserConfig {
 	us, ok := config.Users[user]
 	if !ok {
-		log.Print("This user does not exist: ", user, " Making it right now...")
-		us = &UserConf{
+		us = &UserConfig{
 			Clients: make(map[string]*ClientConfig),
 		}
 		config.Users[user] = us
@@ -85,20 +81,13 @@ func (config *WgConf) GetUserConfig(user string) *UserConf {
 	return us
 }
 
-//----------Configuration: Creating a client and returning it----------
-func NewClientConfig(ip net.IP, name, info string) *ClientConfig {
-	keys, err := wgtypes.GeneratePrivateKey()
-	if err != nil {
-		log.Fatal("Failed to generate keys :: ", err)
-	}
+func NewClientConfig(name string, info string, ip net.IP) ClientConfig {
+	now := time.Now().Format(time.RFC3339)
 	config := ClientConfig{
-		Name:       name,
-		PrivateKey: keys.String(),
-		PublicKey:  keys.PublicKey().String(),
-		IP:         ip,
-		Created:    time.Now().Format(time.RFC3339),
-		Modified:   time.Now().Format(time.RFC3339),
-		Info:       info,
+		Name:     name,
+		Info:     info,
+		IP:       ip,
+		Modified: now,
 	}
-	return &config
+	return config
 }

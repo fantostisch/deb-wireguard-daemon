@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
+	"net/url"
 	"path"
 	"strings"
 )
@@ -14,7 +16,7 @@ type API struct {
 // ShiftPath splits off the first component of p, which will be cleaned of
 // relative components before processing. head will never contain a slash and
 // tail will always be a rooted path without trailing slash.
-func ShiftPath(p string) (head, tail string) {
+func ShiftPath(p string) (head string, tail string) {
 	p = path.Clean("/" + p)
 	i := strings.Index(p[1:], "/") + 1
 	if i <= 0 {
@@ -24,12 +26,16 @@ func ShiftPath(p string) (head, tail string) {
 }
 
 func (h API) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	firstSegment, remaining := ShiftPath(req.URL.Path)
+	firstSegment, remaining := ShiftPath(req.URL.EscapedPath())
 	switch firstSegment {
 	case "user":
-		username, remainingAfterUser := ShiftPath(remaining)
-		req.URL.Path = remainingAfterUser
-		h.UserHandler.ServeHTTP(w, req, username)
+		usernameEscaped, remainingAfterUser := ShiftPath(remaining)
+		username, err := url.PathUnescape(usernameEscaped)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Could not unescape user: %s", usernameEscaped), http.StatusBadRequest)
+			return
+		}
+		h.UserHandler.ServeHTTP(w, req, remainingAfterUser, username)
 	default:
 		http.NotFound(w, req)
 	}
