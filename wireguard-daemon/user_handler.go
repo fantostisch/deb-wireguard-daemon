@@ -31,7 +31,6 @@ func (h UserHandler) getConfigs(w http.ResponseWriter, username string) {
 		http.Error(w, message, http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 }
 
 type createConfigRequest struct {
@@ -93,7 +92,6 @@ func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username
 		http.Error(w, message, http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 }
 
 func (h UserHandler) createConfig(w http.ResponseWriter, username string, publicKey string, req createConfigRequest) {
