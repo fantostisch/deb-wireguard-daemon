@@ -132,6 +132,8 @@ func (h UserHandler) deleteConfig(w http.ResponseWriter, username string, public
 	w.WriteHeader(http.StatusOK)
 }
 
+const form = "application/x-www-form-urlencoded"
+
 func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, remainingURL string, username string) {
 	config, secondRemaining := ShiftPath(remainingURL)
 	if config == "config" {
@@ -147,6 +149,11 @@ func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, remaini
 				}
 				name := req.Form.Get("name")
 				if name == "" {
+					contentType := req.Header.Get("Content-Type")
+					if contentType != form {
+						http.Error(w, fmt.Sprintf("Content-Type '%s' was not equal to %s'", contentType, form), http.StatusBadRequest)
+						return
+					}
 					http.Error(w, "No config name supplied.", http.StatusBadRequest)
 					return
 				}
@@ -169,12 +176,18 @@ func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, remaini
 			}
 			switch req.Method {
 			case http.MethodPost:
+				//todo: same code as above
 				if err := req.ParseForm(); err != nil {
 					http.Error(w, fmt.Sprintf("Could not parse request body: %s", err), http.StatusBadRequest)
 					return
 				}
 				name := req.Form.Get("name")
 				if name == "" {
+					contentType := req.Header.Get("Content-Type")
+					if contentType != form {
+						http.Error(w, fmt.Sprintf("Content-Type '%s' was not equal to %s'", contentType, form), http.StatusBadRequest)
+						return
+					}
 					http.Error(w, "No config name supplied.", http.StatusBadRequest)
 					return
 				}
