@@ -41,3 +41,8 @@ linters-settings:
   gocritic:
     disabled-checks:
       commentFormatting
+
+issues:
+  exclude:
+    # https://github.com/kyoh86/scopelint/issues/4
+    - Using the variable on range scope .* in function literal

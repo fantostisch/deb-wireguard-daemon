@@ -36,47 +36,57 @@ func TestNotEnoughSegments(t *testing.T) {
 	}
 }
 
-var ipAddr, ipNet, _ = net.ParseCIDR("10.0.0.1/8")
-
-var peterUsername = "Peter @ /K.org"
-var peterURL = fmt.Sprintf("/user/%s/config", url.PathEscape(peterUsername))
-
 //todo: test written data instead of in memory data
-//todo: reset server between tests
-var server = &Server{
-	IPAddr:        ipAddr,
-	clientIPRange: ipNet,
-	configureWG: func(s *Server) error {
-		return nil
-	},
-	Config: &Configuration{
-		configPath: "/dev/null",
-		PrivateKey: "server_private_key",
-		PublicKey:  "server_public_key",
-		Users: map[string]*UserConfig{
-			peterUsername: &UserConfig{
-				Clients: map[string]*ClientConfig{
-					"public/key1=": &ClientConfig{
-						Name: "Client config 1",
-						IP:   net.IPv4(10, 0, 0, 1),
-					},
-					"Peters/Very+Rand0m/Public+Key/For+H1s/Phonc=": &ClientConfig{
-						Name: "Client config 2",
-						IP:   net.IPv4(10, 0, 0, 2),
-					},
-					"public+key3=": &ClientConfig{
-						Name: "Client config 3",
-						IP:   net.IPv4(10, 0, 0, 3),
+func newServer(server *Server) {
+	var ipAddr, ipNet, _ = net.ParseCIDR("10.0.0.1/8")
+
+	*server = Server{
+		IPAddr:        ipAddr,
+		clientIPRange: ipNet,
+		configureWG: func(s *Server) error {
+			return nil
+		},
+		Config: &Configuration{
+			configPath: "/dev/null",
+			PrivateKey: "server_private_key",
+			PublicKey:  "server_public_key",
+			Users: map[string]*UserConfig{
+				peterUsername: &UserConfig{
+					Clients: map[string]*ClientConfig{
+						"public/key1=": &ClientConfig{
+							Name: "Client config 1",
+							IP:   net.IPv4(10, 0, 0, 1),
+						},
+						"Peters/Very+Rand0m/Public+Key/For+H1s/Phonc=": &ClientConfig{
+							Name: "Client config 2",
+							IP:   net.IPv4(10, 0, 0, 2),
+						},
+						"public+key3=": &ClientConfig{
+							Name: "Client config 3",
+							IP:   net.IPv4(10, 0, 0, 3),
+						},
 					},
 				},
 			},
 		},
-	},
+	}
 }
+
+var server *Server = &Server{}
 
 var apiRouter = API{
 	UserHandler: UserHandler{Server: server},
 }
+
+func setup() {
+	newServer(server)
+}
+
+var expIPString = "10.0.0.4"
+
+const peterUsername = "Peter @ /K.org"
+
+var peterURL = fmt.Sprintf("/user/%s/config", url.PathEscape(peterUsername))
 
 func testHTTPOkStatus(t *testing.T, w httptest.ResponseRecorder) {
 	exp := http.StatusOK
@@ -87,6 +97,7 @@ func testHTTPOkStatus(t *testing.T, w httptest.ResponseRecorder) {
 }
 
 func TestGetConfigs(t *testing.T) {
+	setup()
 	respRec := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodGet, peterURL, nil)
 	apiRouter.ServeHTTP(respRec, req)
@@ -118,7 +129,7 @@ func TestEmptyUsername(t *testing.T) {
 }
 
 //todo: test creating config multiple times with same public key
-func TestCreateConfig(t *testing.T) {
+func testCreateConfig(t *testing.T, username string) {
 	expName := "+/ My Little Phone 16 +/"
 	expInfo := "/+ y@y +/"
 	requestBody, _ := json.Marshal(map[string]string{
@@ -127,7 +138,7 @@ func TestCreateConfig(t *testing.T) {
 	})
 
 	publicKey := "RuvRcz3zuwz/3xMqqh2ZvL+NT3W2v6J60rMnHtRiOE8="
-	reqURL := peterURL + "/" + url.PathEscape(publicKey)
+	reqURL := fmt.Sprintf("/user/%s/config", url.PathEscape(username)) + "/" + url.PathEscape(publicKey)
 	req, _ := http.NewRequest(http.MethodPost, reqURL, bytes.NewBuffer(requestBody))
 
 	respRec := httptest.NewRecorder()
@@ -139,8 +150,6 @@ func TestCreateConfig(t *testing.T) {
 		IP              string
 		ServerPublicKey string
 	}
-
-	expIPString := "10.0.0.4"
 
 	{
 		got := response{}
@@ -161,7 +170,7 @@ func TestCreateConfig(t *testing.T) {
 	}
 
 	{
-		got := *server.Config.Users[peterUsername].Clients[publicKey]
+		got := *server.Config.Users[username].Clients[publicKey]
 
 		exp := ClientConfig{
 			Name:     expName,
@@ -176,7 +185,22 @@ func TestCreateConfig(t *testing.T) {
 	}
 }
 
+func TestCreateConfig(t *testing.T) {
+	var tests = []struct {
+		testName string
+		username string
+	}{
+		{"Create config for new user", "Emma"},
+		{"Create config for existing user", peterUsername},
+	}
+	for _, tt := range tests {
+		setup()
+		t.Run(tt.testName, func(t *testing.T) { testCreateConfig(t, tt.username) })
+	}
+}
+
 func TestCreateConfigGenerateKeyPair(t *testing.T) {
+	setup()
 	expName := "+/ My Little Phone 16 +/"
 	expInfo := "/+ y@y +/"
 	requestBody, _ := json.Marshal(map[string]string{
@@ -197,8 +221,6 @@ func TestCreateConfigGenerateKeyPair(t *testing.T) {
 		IP               string
 		ServerPublicKey  string
 	}
-
-	expIPString := "10.0.0.5"
 
 	var clientPrivateKey string
 
@@ -247,6 +269,7 @@ func TestCreateConfigGenerateKeyPair(t *testing.T) {
 }
 
 func TestDeleteConfig(t *testing.T) {
+	setup()
 	publicKey := "Peters/Very+Rand0m/Public+Key/For+H1s/Phone="
 	reqURL := peterURL + "/" + url.PathEscape(publicKey)
 	req, _ := http.NewRequest(http.MethodDelete, reqURL, nil)
