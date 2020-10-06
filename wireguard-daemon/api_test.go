@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -86,8 +85,6 @@ var expIPString = "10.0.0.4"
 
 const peterUsername = "Peter @ /K.org"
 
-var peterURL = fmt.Sprintf("/user/%s/config", url.PathEscape(peterUsername))
-
 func testHTTPOkStatus(t *testing.T, w httptest.ResponseRecorder) {
 	exp := http.StatusOK
 	got := w.Code
@@ -99,7 +96,10 @@ func testHTTPOkStatus(t *testing.T, w httptest.ResponseRecorder) {
 func TestGetConfigs(t *testing.T) {
 	setup()
 	respRec := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, peterURL, nil)
+	parameters := url.Values{
+		"user_id": {peterUsername},
+	}
+	req, _ := http.NewRequest(http.MethodGet, "/config?"+parameters.Encode(), nil)
 	apiRouter.ServeHTTP(respRec, req)
 	testHTTPOkStatus(t, *respRec)
 	got := map[string]*ClientConfig{}
@@ -118,10 +118,10 @@ func TestEmptyUsername(t *testing.T) {
 	requestBody := url.Values{
 		"name": {"Name1"},
 	}
-	req, _ := http.NewRequest(http.MethodPost, "/user//config", bytes.NewBufferString(requestBody.Encode()))
+	req, _ := http.NewRequest(http.MethodPost, "/config?user_id=", bytes.NewBufferString(requestBody.Encode()))
 	apiRouter.ServeHTTP(respRec, req)
 	gotCode := respRec.Code
-	expCode := http.StatusNotFound
+	expCode := http.StatusBadRequest
 	if gotCode != expCode {
 		t.Errorf("Status code %d is not the expected %d", gotCode, expCode)
 	}
@@ -130,12 +130,16 @@ func TestEmptyUsername(t *testing.T) {
 //todo: test creating config multiple times with same public key
 func testCreateConfig(t *testing.T, username string) {
 	expName := "+/ My Little Phone 16 +/"
+
+	publicKey := "RuvRcz3zuwz/3xMqqh2ZvL+NT3W2v6J60rMnHtRiOE8="
+	parameters := url.Values{
+		"user_id":    {username},
+		"public_key": {publicKey},
+	}
 	requestBody := url.Values{
 		"name": {expName},
 	}
-
-	publicKey := "RuvRcz3zuwz/3xMqqh2ZvL+NT3W2v6J60rMnHtRiOE8="
-	reqURL := fmt.Sprintf("/user/%s/config", url.PathEscape(username)) + "/" + url.PathEscape(publicKey)
+	reqURL := "/config?" + parameters.Encode()
 	req, _ := http.NewRequest(http.MethodPost, reqURL, bytes.NewBufferString(requestBody.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
@@ -199,12 +203,14 @@ func TestCreateConfig(t *testing.T) {
 func TestCreateConfigGenerateKeyPair(t *testing.T) {
 	setup()
 	expName := "+/ My Little Phone 16 +/"
+
+	parameters := url.Values{
+		"user_id": {peterUsername},
+	}
 	requestBody := url.Values{
 		"name": {expName},
 	}
-
-	reqURL := peterURL
-	req, _ := http.NewRequest(http.MethodPost, reqURL, bytes.NewBufferString(requestBody.Encode()))
+	req, _ := http.NewRequest(http.MethodPost, "/config?"+parameters.Encode(), bytes.NewBufferString(requestBody.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	respRec := httptest.NewRecorder()
@@ -266,8 +272,11 @@ func TestCreateConfigGenerateKeyPair(t *testing.T) {
 func TestDeleteConfig(t *testing.T) {
 	setup()
 	publicKey := "Peters/Very+Rand0m/Public+Key/For+H1s/Phone="
-	reqURL := peterURL + "/" + url.PathEscape(publicKey)
-	req, _ := http.NewRequest(http.MethodDelete, reqURL, nil)
+	parameters := url.Values{
+		"user_id":    {peterUsername},
+		"public_key": {publicKey},
+	}
+	req, _ := http.NewRequest(http.MethodDelete, "/config?"+parameters.Encode(), nil)
 
 	respRec := httptest.NewRecorder()
 	apiRouter.ServeHTTP(respRec, req)

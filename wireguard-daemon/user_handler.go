@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"net/url"
 
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
@@ -134,71 +133,52 @@ func (h UserHandler) deleteConfig(w http.ResponseWriter, username string, public
 
 const form = "application/x-www-form-urlencoded"
 
-func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, remainingURL string, username string) {
-	config, secondRemaining := ShiftPath(remainingURL)
-	if config == "config" {
-		receivedPublicKeyEscaped, _ := ShiftPath(secondRemaining)
-		if receivedPublicKeyEscaped == "" {
-			switch req.Method {
-			case http.MethodGet:
-				h.getConfigs(w, username)
-			case http.MethodPost:
-				if err := req.ParseForm(); err != nil {
-					http.Error(w, fmt.Sprintf("Could not parse request body: %s", err), http.StatusBadRequest)
+func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, username string) {
+	receivedPublicKey := req.Form.Get("public_key")
+	if receivedPublicKey == "" {
+		switch req.Method {
+		case http.MethodGet:
+			h.getConfigs(w, username)
+		case http.MethodPost:
+			name := req.Form.Get("name")
+			if name == "" {
+				contentType := req.Header.Get("Content-Type")
+				if contentType != form {
+					http.Error(w, fmt.Sprintf("Content-Type '%s' was not equal to %s'", contentType, form), http.StatusBadRequest)
 					return
 				}
-				name := req.Form.Get("name")
-				if name == "" {
-					contentType := req.Header.Get("Content-Type")
-					if contentType != form {
-						http.Error(w, fmt.Sprintf("Content-Type '%s' was not equal to %s'", contentType, form), http.StatusBadRequest)
-						return
-					}
-					http.Error(w, "No config name supplied.", http.StatusBadRequest)
-					return
-				}
-				h.createConfigGenerateKeyPair(w, username, name)
-			default:
-				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+				http.Error(w, "No config name supplied.", http.StatusBadRequest)
 				return
 			}
-		} else {
-			receivedPublicKey, err := url.PathUnescape(receivedPublicKeyEscaped)
-			if err != nil {
-				message := fmt.Sprintf("Public key '%s' was not properly escaped: %s", receivedPublicKey, err)
-				http.Error(w, message, http.StatusBadRequest)
-				return
-			}
-			publicKey, err := wgtypes.ParseKey(receivedPublicKey)
-			if err != nil {
-				http.Error(w, fmt.Sprintf("Invalid public key: '%s'. %s", receivedPublicKey, err), http.StatusBadRequest)
-				return
-			}
-			switch req.Method {
-			case http.MethodPost:
-				//todo: same code as above
-				if err := req.ParseForm(); err != nil {
-					http.Error(w, fmt.Sprintf("Could not parse request body: %s", err), http.StatusBadRequest)
-					return
-				}
-				name := req.Form.Get("name")
-				if name == "" {
-					contentType := req.Header.Get("Content-Type")
-					if contentType != form {
-						http.Error(w, fmt.Sprintf("Content-Type '%s' was not equal to %s'", contentType, form), http.StatusBadRequest)
-						return
-					}
-					http.Error(w, "No config name supplied.", http.StatusBadRequest)
-					return
-				}
-				h.createConfig(w, username, publicKey.String(), name)
-			case http.MethodDelete:
-				h.deleteConfig(w, username, publicKey.String())
-			default:
-				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			}
+			h.createConfigGenerateKeyPair(w, username, name)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
 		}
 	} else {
-		http.NotFound(w, req)
+		publicKey, err := wgtypes.ParseKey(receivedPublicKey)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Invalid public key: '%s'. %s", receivedPublicKey, err), http.StatusBadRequest)
+			return
+		}
+		switch req.Method {
+		case http.MethodPost:
+			//todo: same code as above
+			name := req.Form.Get("name")
+			if name == "" {
+				contentType := req.Header.Get("Content-Type")
+				if contentType != form {
+					http.Error(w, fmt.Sprintf("Content-Type '%s' was not equal to %s'", contentType, form), http.StatusBadRequest)
+					return
+				}
+				http.Error(w, "No config name supplied.", http.StatusBadRequest)
+				return
+			}
+			h.createConfig(w, username, publicKey.String(), name)
+		case http.MethodDelete:
+			h.deleteConfig(w, username, publicKey.String())
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
 	}
 }
