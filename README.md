@@ -84,11 +84,11 @@ Endpoint = <server ip>:51820
 ```
  
 ## API endpoints
-| Method | Url                                  | Data        | Description                                                                                                  |
-|--------|--------------------------------------|-------------|--------------------------------------------------------------------------------------------------------------|
-| GET    | /user/{username}/config              |             | List all configs of the user.                                                                                |
-| POST   | /user/{username}/config              | name=Phone  | Create client config. Let the server create a public private key pair.                                       |
-| POST   | /user/{username}/config/{public key} | name=Laptop | Create client config. Creating 2 client configs with the same public key will overwrite the existing config. |
-| DELETE | /user/{username}/config/{public key} |             | Delete client config.                                                                                        |
+| Method | Url                                | Data        | Description                                                                                                  |
+|--------|------------------------------------|-------------|--------------------------------------------------------------------------------------------------------------|
+| GET    | /config?user_id=foo                |             | List all configs of the user.                                                                                |
+| POST   | /config?user_id=foo                | name=Phone  | Create client config. Let the server create a public private key pair.                                       |
+| POST   | /config?user_id=foo&public_key=ABC | name=Laptop | Create client config. Creating 2 client configs with the same public key will overwrite the existing config. |
+| DELETE | /config?user_id=foo&public_key=ABC |             | Delete client config.                                                                                        |
 
 todo: document return values including errors
