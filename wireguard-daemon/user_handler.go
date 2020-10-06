@@ -33,10 +33,6 @@ func (h UserHandler) getConfigs(w http.ResponseWriter, username string) {
 	}
 }
 
-type createConfigRequest struct {
-	Name string `json:"name"`
-}
-
 type createConfigAndKeyPairResponse struct {
 	ClientPrivateKey string `json:"clientPrivateKey"`
 	IP               net.IP `json:"ip"`
@@ -65,7 +61,7 @@ func (h UserHandler) newConfig(username string, publicKey string, name string) c
 	}
 }
 
-func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username string, req createConfigRequest) {
+func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username string, name string) {
 	clientPrivateKey, err := wgtypes.GeneratePrivateKey()
 	if err != nil {
 		message := fmt.Sprintf("Error generating private key: %s", err)
@@ -73,7 +69,7 @@ func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username
 		return
 	}
 	clientPublicKey := clientPrivateKey.PublicKey()
-	createConfigResponse := h.newConfig(username, clientPublicKey.String(), req.Name)
+	createConfigResponse := h.newConfig(username, clientPublicKey.String(), name)
 	response := createConfigAndKeyPairResponse{
 		ClientPrivateKey: clientPrivateKey.String(),
 		IP:               createConfigResponse.IP,
@@ -93,8 +89,8 @@ func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username
 	}
 }
 
-func (h UserHandler) createConfig(w http.ResponseWriter, username string, publicKey string, req createConfigRequest) {
-	response := h.newConfig(username, publicKey, req.Name)
+func (h UserHandler) createConfig(w http.ResponseWriter, username string, publicKey string, name string) {
+	response := h.newConfig(username, publicKey, name)
 
 	if err := h.Server.reconfigureWG(); err != nil {
 		message := fmt.Sprintf("Error reconfiguring WireGuard: %s", err)
@@ -145,12 +141,16 @@ func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, remaini
 			case http.MethodGet:
 				h.getConfigs(w, username)
 			case http.MethodPost:
-				createRequest := createConfigRequest{}
-				if err := json.NewDecoder(req.Body).Decode(&createRequest); err != nil {
-					http.Error(w, fmt.Sprintf("Could not decode request body: %s \n %s", err, req.Body), http.StatusBadRequest)
+				if err := req.ParseForm(); err != nil {
+					http.Error(w, fmt.Sprintf("Could not parse request body: %s", err), http.StatusBadRequest)
 					return
 				}
-				h.createConfigGenerateKeyPair(w, username, createRequest)
+				name := req.Form.Get("name")
+				if name == "" {
+					http.Error(w, "No config name supplied.", http.StatusBadRequest)
+					return
+				}
+				h.createConfigGenerateKeyPair(w, username, name)
 			default:
 				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 				return
@@ -169,12 +169,16 @@ func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, remaini
 			}
 			switch req.Method {
 			case http.MethodPost:
-				createRequest := createConfigRequest{}
-				if err := json.NewDecoder(req.Body).Decode(&createRequest); err != nil {
-					http.Error(w, fmt.Sprintf("Could not decode request body: %s \n %s", err, req.Body), http.StatusBadRequest)
+				if err := req.ParseForm(); err != nil {
+					http.Error(w, fmt.Sprintf("Could not parse request body: %s", err), http.StatusBadRequest)
 					return
 				}
-				h.createConfig(w, username, publicKey.String(), createRequest)
+				name := req.Form.Get("name")
+				if name == "" {
+					http.Error(w, "No config name supplied.", http.StatusBadRequest)
+					return
+				}
+				h.createConfig(w, username, publicKey.String(), name)
 			case http.MethodDelete:
 				h.deleteConfig(w, username, publicKey.String())
 			default:

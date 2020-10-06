@@ -115,10 +115,10 @@ func TestGetConfigs(t *testing.T) {
 
 func TestEmptyUsername(t *testing.T) {
 	respRec := httptest.NewRecorder()
-	requestBody, _ := json.Marshal(map[string]string{
-		"name": "Name1",
-	})
-	req, _ := http.NewRequest(http.MethodPost, "/user//config", bytes.NewBuffer(requestBody))
+	requestBody := url.Values{
+		"name": {"Name1"},
+	}
+	req, _ := http.NewRequest(http.MethodPost, "/user//config", bytes.NewBufferString(requestBody.Encode()))
 	apiRouter.ServeHTTP(respRec, req)
 	gotCode := respRec.Code
 	expCode := http.StatusNotFound
@@ -130,13 +130,14 @@ func TestEmptyUsername(t *testing.T) {
 //todo: test creating config multiple times with same public key
 func testCreateConfig(t *testing.T, username string) {
 	expName := "+/ My Little Phone 16 +/"
-	requestBody, _ := json.Marshal(map[string]string{
-		"name": expName,
-	})
+	requestBody := url.Values{
+		"name": {expName},
+	}
 
 	publicKey := "RuvRcz3zuwz/3xMqqh2ZvL+NT3W2v6J60rMnHtRiOE8="
 	reqURL := fmt.Sprintf("/user/%s/config", url.PathEscape(username)) + "/" + url.PathEscape(publicKey)
-	req, _ := http.NewRequest(http.MethodPost, reqURL, bytes.NewBuffer(requestBody))
+	req, _ := http.NewRequest(http.MethodPost, reqURL, bytes.NewBufferString(requestBody.Encode()))
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	respRec := httptest.NewRecorder()
 	apiRouter.ServeHTTP(respRec, req)
@@ -198,12 +199,13 @@ func TestCreateConfig(t *testing.T) {
 func TestCreateConfigGenerateKeyPair(t *testing.T) {
 	setup()
 	expName := "+/ My Little Phone 16 +/"
-	requestBody, _ := json.Marshal(map[string]string{
-		"name": expName,
-	})
+	requestBody := url.Values{
+		"name": {expName},
+	}
 
 	reqURL := peterURL
-	req, _ := http.NewRequest(http.MethodPost, reqURL, bytes.NewBuffer(requestBody))
+	req, _ := http.NewRequest(http.MethodPost, reqURL, bytes.NewBufferString(requestBody.Encode()))
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	respRec := httptest.NewRecorder()
 	apiRouter.ServeHTTP(respRec, req)
