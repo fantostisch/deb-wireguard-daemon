@@ -117,7 +117,6 @@ func TestEmptyUsername(t *testing.T) {
 	respRec := httptest.NewRecorder()
 	requestBody, _ := json.Marshal(map[string]string{
 		"name": "Name1",
-		"info": "Info1",
 	})
 	req, _ := http.NewRequest(http.MethodPost, "/user//config", bytes.NewBuffer(requestBody))
 	apiRouter.ServeHTTP(respRec, req)
@@ -131,10 +130,8 @@ func TestEmptyUsername(t *testing.T) {
 //todo: test creating config multiple times with same public key
 func testCreateConfig(t *testing.T, username string) {
 	expName := "+/ My Little Phone 16 +/"
-	expInfo := "/+ y@y +/"
 	requestBody, _ := json.Marshal(map[string]string{
 		"name": expName,
-		"info": expInfo,
 	})
 
 	publicKey := "RuvRcz3zuwz/3xMqqh2ZvL+NT3W2v6J60rMnHtRiOE8="
@@ -174,7 +171,6 @@ func testCreateConfig(t *testing.T, username string) {
 
 		exp := ClientConfig{
 			Name:     expName,
-			Info:     expInfo,
 			IP:       net.ParseIP(expIPString),
 			Modified: got.Modified, //todo: test
 		}
@@ -202,10 +198,8 @@ func TestCreateConfig(t *testing.T) {
 func TestCreateConfigGenerateKeyPair(t *testing.T) {
 	setup()
 	expName := "+/ My Little Phone 16 +/"
-	expInfo := "/+ y@y +/"
 	requestBody, _ := json.Marshal(map[string]string{
 		"name": expName,
-		"info": expInfo,
 	})
 
 	reqURL := peterURL
@@ -257,7 +251,6 @@ func TestCreateConfigGenerateKeyPair(t *testing.T) {
 
 		exp := ClientConfig{
 			Name:     expName,
-			Info:     expInfo,
 			IP:       net.ParseIP(expIPString),
 			Modified: got.Modified, //todo: test
 		}

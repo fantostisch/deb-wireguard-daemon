@@ -6,7 +6,6 @@
       "Clients": {
         "igAsM9uQta1cZxYmvSz8o//O8gVVwR0oqDGp4Se4J1Q=": {
           "name": "My Tablet",
-          "info": "That thing with the broken screen which is impossible to replace",
           "ip": "10.0.0.4",
           "modified": "2020-10-02T15:05:42+02:00"
         }
@@ -16,13 +15,11 @@
       "Clients": {
         "0vGpC1HIMNmSwAfXU3UNboI+iaC48b4jjS+SSS2s0l0=": {
           "name": "My Phone",
-          "info": "That thing that does not get OS security patches anymore",
           "ip": "10.0.0.2",
           "modified": "2020-10-02T15:04:52+02:00"
         },
         "bOy9X7oTO/IDRulouAIPO/JimHuBxrF3jsx6XD/hsl4=": {
           "name": "My Laptop",
-          "info": "That thing with the backdoor in its CPU",
           "ip": "10.0.0.3",
           "modified": "2020-10-02T15:05:12+02:00"
         }

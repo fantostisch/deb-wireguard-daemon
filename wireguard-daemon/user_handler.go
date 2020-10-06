@@ -35,7 +35,6 @@ func (h UserHandler) getConfigs(w http.ResponseWriter, username string) {
 
 type createConfigRequest struct {
 	Name string `json:"name"`
-	Info string `json:"info"`
 }
 
 type createConfigAndKeyPairResponse struct {
@@ -49,14 +48,14 @@ type createConfigResponse struct {
 	ServerPublicKey string `json:"serverPublicKey"`
 }
 
-func (h UserHandler) newConfig(username string, publicKey string, name string, info string) createConfigResponse {
+func (h UserHandler) newConfig(username string, publicKey string, name string) createConfigResponse {
 	h.Server.mutex.Lock()
 	defer h.Server.mutex.Unlock()
 
 	userConfig := h.Server.Config.GetUserConfig(username)
 
 	ip := h.Server.allocateIP()
-	config := NewClientConfig(name, info, ip)
+	config := NewClientConfig(name, ip)
 
 	userConfig.Clients[publicKey] = &config
 
@@ -74,7 +73,7 @@ func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username
 		return
 	}
 	clientPublicKey := clientPrivateKey.PublicKey()
-	createConfigResponse := h.newConfig(username, clientPublicKey.String(), req.Name, req.Info)
+	createConfigResponse := h.newConfig(username, clientPublicKey.String(), req.Name)
 	response := createConfigAndKeyPairResponse{
 		ClientPrivateKey: clientPrivateKey.String(),
 		IP:               createConfigResponse.IP,
@@ -95,7 +94,7 @@ func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username
 }
 
 func (h UserHandler) createConfig(w http.ResponseWriter, username string, publicKey string, req createConfigRequest) {
-	response := h.newConfig(username, publicKey, req.Name, req.Info)
+	response := h.newConfig(username, publicKey, req.Name)
 
 	if err := h.Server.reconfigureWG(); err != nil {
 		message := fmt.Sprintf("Error reconfiguring WireGuard: %s", err)

@@ -25,7 +25,6 @@ type UserConfig struct {
 
 type ClientConfig struct {
 	Name     string `json:"name"`
-	Info     string `json:"info"`
 	IP       net.IP `json:"ip"`
 	Modified string `json:"modified"`
 }
@@ -81,11 +80,10 @@ func (config *Configuration) GetUserConfig(user string) *UserConfig {
 	return us
 }
 
-func NewClientConfig(name string, info string, ip net.IP) ClientConfig {
+func NewClientConfig(name string, ip net.IP) ClientConfig {
 	now := time.Now().Format(time.RFC3339)
 	config := ClientConfig{
 		Name:     name,
-		Info:     info,
 		IP:       ip,
 		Modified: now,
 	}
