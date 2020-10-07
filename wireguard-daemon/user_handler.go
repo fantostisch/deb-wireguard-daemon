@@ -169,7 +169,24 @@ func (h UserHandler) enableUser(w http.ResponseWriter, username string) {
 	h.setDisabledHTTP(w, username, false, fmt.Sprintf("User %s was already enabled.", username))
 }
 
-const form = "application/x-www-form-urlencoded"
+// getRequiredValue gets a value from the HTTP parameters. If the value is not available an error response will be
+// written and an empty string will be returned.
+// Assumption: req.Form was was populated by calling req.ParseForm()
+func (h UserHandler) getRequiredValue(w http.ResponseWriter, req *http.Request, key string) string {
+	value := req.Form.Get(key)
+	if value == "" {
+		contentType := req.Header.Get("Content-Type")
+		const form = "application/x-www-form-urlencoded"
+		if contentType != form {
+			message := fmt.Sprintf("Content-Type '%s' was not equal to %s'", contentType, form)
+			http.Error(w, message, http.StatusUnsupportedMediaType)
+			return ""
+		}
+		http.Error(w, "%s was not supplied.", http.StatusBadRequest)
+		return ""
+	}
+	return value
+}
 
 func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, url string, username string) {
 	firstSegment, _ := ShiftPath(url)
@@ -181,15 +198,8 @@ func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, url str
 			case http.MethodGet:
 				h.getConfigs(w, username)
 			case http.MethodPost:
-				name := req.Form.Get("name")
+				name := h.getRequiredValue(w, req, "name")
 				if name == "" {
-					contentType := req.Header.Get("Content-Type")
-					if contentType != form {
-						message := fmt.Sprintf("Content-Type '%s' was not equal to %s'", contentType, form)
-						http.Error(w, message, http.StatusUnsupportedMediaType)
-						return
-					}
-					http.Error(w, "No config name supplied.", http.StatusBadRequest)
 					return
 				}
 				h.createConfigGenerateKeyPair(w, username, name)
@@ -206,16 +216,8 @@ func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, url str
 			}
 			switch req.Method {
 			case http.MethodPost:
-				//todo: same code as above
-				name := req.Form.Get("name")
+				name := h.getRequiredValue(w, req, "name")
 				if name == "" {
-					contentType := req.Header.Get("Content-Type")
-					if contentType != form {
-						message := fmt.Sprintf("Content-Type '%s' was not equal to %s'", contentType, form)
-						http.Error(w, message, http.StatusUnsupportedMediaType)
-						return
-					}
-					http.Error(w, "No config name supplied.", http.StatusBadRequest)
 					return
 				}
 				h.createConfig(w, username, publicKey.String(), name)
