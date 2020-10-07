@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -347,4 +348,14 @@ func TestDisablingAndEnablingUser(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) { tt.testFunction(t, tt.username, tt.expCode) })
 	}
+}
+
+func TestWireGuardReconfigureError(t *testing.T) {
+	setup()
+	server.configureWG = func(s *Server) error {
+		return errors.New("")
+	}
+
+	testDisableUser(t, peterUsername, http.StatusInternalServerError)
+	testEnableUser(t, peterUsername, http.StatusInternalServerError)
 }

@@ -60,6 +60,18 @@ func (h UserHandler) newConfig(username string, publicKey string, name string) c
 	}
 }
 
+// reconfigureWGHTTP reconfigures WireGuard. If there is an error it responds
+// a InternalServerError and returns false. If it succeeds no response is
+// written and true is returned.
+func (h UserHandler) reconfigureWGHTTP(w http.ResponseWriter) bool {
+	if err := h.Server.reconfigureWG(); err != nil {
+		message := fmt.Sprintf("Error reconfiguring WireGuard: %s", err)
+		http.Error(w, message, http.StatusInternalServerError)
+		return false
+	}
+	return true
+}
+
 func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username string, name string) {
 	clientPrivateKey, err := wgtypes.GeneratePrivateKey()
 	if err != nil {
@@ -75,9 +87,7 @@ func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username
 		ServerPublicKey:  createConfigResponse.ServerPublicKey,
 	}
 
-	if err := h.Server.reconfigureWG(); err != nil {
-		message := fmt.Sprintf("Error reconfiguring WireGuard: %s", err)
-		http.Error(w, message, http.StatusInternalServerError)
+	if !h.reconfigureWGHTTP(w) {
 		return
 	}
 
@@ -91,9 +101,7 @@ func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username
 func (h UserHandler) createConfig(w http.ResponseWriter, username string, publicKey string, name string) {
 	response := h.newConfig(username, publicKey, name)
 
-	if err := h.Server.reconfigureWG(); err != nil {
-		message := fmt.Sprintf("Error reconfiguring WireGuard: %s", err)
-		http.Error(w, message, http.StatusInternalServerError)
+	if !h.reconfigureWGHTTP(w) {
 		return
 	}
 
@@ -122,9 +130,7 @@ func (h UserHandler) deleteConfig(w http.ResponseWriter, username string, public
 
 	delete(userConfig.Clients, publicKey)
 
-	if err := h.Server.reconfigureWG(); err != nil {
-		message := fmt.Sprintf("Error reconfiguring WireGuard: %s", err)
-		http.Error(w, message, http.StatusInternalServerError)
+	if !h.reconfigureWGHTTP(w) {
 		return
 	}
 
@@ -148,10 +154,7 @@ func (h UserHandler) setDisabledHTTP(w http.ResponseWriter, username string, dis
 		http.Error(w, conflictMessage, http.StatusConflict)
 	}
 
-	//todo: do not copy this reconfigure code everywhere
-	if err := h.Server.reconfigureWG(); err != nil {
-		message := fmt.Sprintf("Error reconfiguring WireGuard: %s", err)
-		http.Error(w, message, http.StatusInternalServerError)
+	if !h.reconfigureWGHTTP(w) {
 		return
 	}
 
