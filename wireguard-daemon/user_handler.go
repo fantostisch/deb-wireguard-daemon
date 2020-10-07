@@ -183,7 +183,7 @@ func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, url str
 					contentType := req.Header.Get("Content-Type")
 					if contentType != form {
 						message := fmt.Sprintf("Content-Type '%s' was not equal to %s'", contentType, form)
-						http.Error(w, message, http.StatusBadRequest)
+						http.Error(w, message, http.StatusUnsupportedMediaType)
 						return
 					}
 					http.Error(w, "No config name supplied.", http.StatusBadRequest)
@@ -209,7 +209,7 @@ func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, url str
 					contentType := req.Header.Get("Content-Type")
 					if contentType != form {
 						message := fmt.Sprintf("Content-Type '%s' was not equal to %s'", contentType, form)
-						http.Error(w, message, http.StatusBadRequest)
+						http.Error(w, message, http.StatusUnsupportedMediaType)
 						return
 					}
 					http.Error(w, "No config name supplied.", http.StatusBadRequest)
