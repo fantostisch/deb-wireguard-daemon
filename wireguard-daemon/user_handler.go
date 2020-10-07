@@ -131,54 +131,99 @@ func (h UserHandler) deleteConfig(w http.ResponseWriter, username string, public
 	w.WriteHeader(http.StatusOK)
 }
 
+// setDisabled disables or enables a user and returns if the value was changed
+func (h UserHandler) setDisabled(username string, disabled bool) bool {
+	h.Server.mutex.Lock()
+	defer h.Server.mutex.Unlock()
+	userConfig := h.Server.Config.GetUserConfig(username)
+	if userConfig.IsDisabled == disabled {
+		return false
+	}
+	userConfig.IsDisabled = disabled
+	return true
+}
+
+func (h UserHandler) setDisabledHTTP(w http.ResponseWriter, username string, disabled bool, conflictMessage string) {
+	if !h.setDisabled(username, disabled) {
+		http.Error(w, conflictMessage, http.StatusConflict)
+	}
+
+	//todo: do not copy this reconfigure code everywhere
+	if err := h.Server.reconfigureWG(); err != nil {
+		message := fmt.Sprintf("Error reconfiguring WireGuard: %s", err)
+		http.Error(w, message, http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h UserHandler) disableUser(w http.ResponseWriter, username string) {
+	h.setDisabledHTTP(w, username, true, fmt.Sprintf("User %s was already disabled.", username))
+}
+
+func (h UserHandler) enableUser(w http.ResponseWriter, username string) {
+	h.setDisabledHTTP(w, username, false, fmt.Sprintf("User %s was already enabled.", username))
+}
+
 const form = "application/x-www-form-urlencoded"
 
-func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, username string) {
-	receivedPublicKey := req.Form.Get("public_key")
-	if receivedPublicKey == "" {
-		switch req.Method {
-		case http.MethodGet:
-			h.getConfigs(w, username)
-		case http.MethodPost:
-			name := req.Form.Get("name")
-			if name == "" {
-				contentType := req.Header.Get("Content-Type")
-				if contentType != form {
-					http.Error(w, fmt.Sprintf("Content-Type '%s' was not equal to %s'", contentType, form), http.StatusBadRequest)
+func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, url string, username string) {
+	firstSegment, _ := ShiftPath(url)
+	switch firstSegment {
+	case "config":
+		receivedPublicKey := req.Form.Get("public_key")
+		if receivedPublicKey == "" {
+			switch req.Method {
+			case http.MethodGet:
+				h.getConfigs(w, username)
+			case http.MethodPost:
+				name := req.Form.Get("name")
+				if name == "" {
+					contentType := req.Header.Get("Content-Type")
+					if contentType != form {
+						http.Error(w, fmt.Sprintf("Content-Type '%s' was not equal to %s'", contentType, form), http.StatusBadRequest)
+						return
+					}
+					http.Error(w, "No config name supplied.", http.StatusBadRequest)
 					return
 				}
-				http.Error(w, "No config name supplied.", http.StatusBadRequest)
+				h.createConfigGenerateKeyPair(w, username, name)
+			default:
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 				return
 			}
-			h.createConfigGenerateKeyPair(w, username, name)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-	} else {
-		publicKey, err := wgtypes.ParseKey(receivedPublicKey)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Invalid public key: '%s'. %s", receivedPublicKey, err), http.StatusBadRequest)
-			return
-		}
-		switch req.Method {
-		case http.MethodPost:
-			//todo: same code as above
-			name := req.Form.Get("name")
-			if name == "" {
-				contentType := req.Header.Get("Content-Type")
-				if contentType != form {
-					http.Error(w, fmt.Sprintf("Content-Type '%s' was not equal to %s'", contentType, form), http.StatusBadRequest)
+		} else {
+			publicKey, err := wgtypes.ParseKey(receivedPublicKey)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("Invalid public key: '%s'. %s", receivedPublicKey, err), http.StatusBadRequest)
+				return
+			}
+			switch req.Method {
+			case http.MethodPost:
+				//todo: same code as above
+				name := req.Form.Get("name")
+				if name == "" {
+					contentType := req.Header.Get("Content-Type")
+					if contentType != form {
+						http.Error(w, fmt.Sprintf("Content-Type '%s' was not equal to %s'", contentType, form), http.StatusBadRequest)
+						return
+					}
+					http.Error(w, "No config name supplied.", http.StatusBadRequest)
 					return
 				}
-				http.Error(w, "No config name supplied.", http.StatusBadRequest)
-				return
+				h.createConfig(w, username, publicKey.String(), name)
+			case http.MethodDelete:
+				h.deleteConfig(w, username, publicKey.String())
+			default:
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			}
-			h.createConfig(w, username, publicKey.String(), name)
-		case http.MethodDelete:
-			h.deleteConfig(w, username, publicKey.String())
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
+	case "disable_user":
+		h.disableUser(w, username)
+	case "enable_user":
+		h.enableUser(w, username)
+	default:
+		http.NotFound(w, req)
 	}
 }

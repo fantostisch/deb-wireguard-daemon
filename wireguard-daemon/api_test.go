@@ -85,8 +85,7 @@ var expIPString = "10.0.0.4"
 
 const peterUsername = "Peter @ /K.org"
 
-func testHTTPOkStatus(t *testing.T, w httptest.ResponseRecorder) {
-	exp := http.StatusOK
+func testHTTPStatus(t *testing.T, w httptest.ResponseRecorder, exp int) {
 	got := w.Code
 	if got != exp {
 		t.Errorf("Status code %d is not the expected %d. Response body: %s", got, exp, w.Body)
@@ -101,7 +100,7 @@ func TestGetConfigs(t *testing.T) {
 	}
 	req, _ := http.NewRequest(http.MethodGet, "/config?"+parameters.Encode(), nil)
 	apiRouter.ServeHTTP(respRec, req)
-	testHTTPOkStatus(t, *respRec)
+	testHTTPStatus(t, *respRec, http.StatusOK)
 	got := map[string]*ClientConfig{}
 	err := json.NewDecoder(respRec.Body).Decode(&got)
 	if err != nil {
@@ -120,11 +119,7 @@ func TestEmptyUsername(t *testing.T) {
 	}
 	req, _ := http.NewRequest(http.MethodPost, "/config?user_id=", bytes.NewBufferString(requestBody.Encode()))
 	apiRouter.ServeHTTP(respRec, req)
-	gotCode := respRec.Code
-	expCode := http.StatusBadRequest
-	if gotCode != expCode {
-		t.Errorf("Status code %d is not the expected %d", gotCode, expCode)
-	}
+	testHTTPStatus(t, *respRec, http.StatusBadRequest)
 }
 
 //todo: test creating config multiple times with same public key
@@ -146,7 +141,7 @@ func testCreateConfig(t *testing.T, username string) {
 	respRec := httptest.NewRecorder()
 	apiRouter.ServeHTTP(respRec, req)
 
-	testHTTPOkStatus(t, *respRec)
+	testHTTPStatus(t, *respRec, http.StatusOK)
 
 	type response struct {
 		IP              string
@@ -216,7 +211,7 @@ func TestCreateConfigGenerateKeyPair(t *testing.T) {
 	respRec := httptest.NewRecorder()
 	apiRouter.ServeHTTP(respRec, req)
 
-	testHTTPOkStatus(t, *respRec)
+	testHTTPStatus(t, *respRec, http.StatusOK)
 
 	type response struct {
 		ClientPrivateKey string
@@ -281,7 +276,7 @@ func TestDeleteConfig(t *testing.T) {
 	respRec := httptest.NewRecorder()
 	apiRouter.ServeHTTP(respRec, req)
 
-	testHTTPOkStatus(t, *respRec)
+	testHTTPStatus(t, *respRec, http.StatusOK)
 
 	config, exists := server.Config.Users[peterUsername].Clients[publicKey]
 	if exists {
@@ -289,5 +284,66 @@ func TestDeleteConfig(t *testing.T) {
 	}
 	if config != nil {
 		t.Error(config, "not nil")
+	}
+}
+
+func testDisableUser(t *testing.T, username string, expCode int) {
+	parameters := url.Values{
+		"user_id": {username},
+	}
+	req, _ := http.NewRequest(http.MethodPost, "/disable_user?"+parameters.Encode(), nil)
+
+	respRec := httptest.NewRecorder()
+	apiRouter.ServeHTTP(respRec, req)
+
+	testHTTPStatus(t, *respRec, expCode)
+
+	disabled := server.Config.Users[username].IsDisabled
+	if !disabled {
+		t.Error("User not disabled.")
+	}
+}
+
+func testEnableUser(t *testing.T, username string, expCode int) {
+	parameters := url.Values{
+		"user_id": {username},
+	}
+	req, _ := http.NewRequest(http.MethodPost, "/enable_user?"+parameters.Encode(), nil)
+
+	respRec := httptest.NewRecorder()
+	apiRouter.ServeHTTP(respRec, req)
+
+	testHTTPStatus(t, *respRec, expCode)
+
+	disabled := server.Config.Users[username].IsDisabled
+	if disabled {
+		t.Error("User disabled.")
+	}
+}
+
+func TestDisablingAndEnablingUser(t *testing.T) {
+	setup()
+	var tests = []struct {
+		testName     string
+		username     string
+		expCode      int
+		testFunction func(t *testing.T, username string, expCode int)
+	}{
+		{"Disable new user", "Emma", http.StatusOK, testDisableUser},
+		{"Disable existing user Peter", peterUsername, http.StatusOK, testDisableUser},
+		{"Enable Emma", "Emma", http.StatusOK, testEnableUser},
+		{"Enable Peter", peterUsername, http.StatusOK, testEnableUser},
+
+		{"Enable new user", "Pierre", http.StatusConflict, testEnableUser},
+		{"Disable Pierre", "Pierre", http.StatusOK, testDisableUser},
+		{"Enable Pierre", "Pierre", http.StatusOK, testEnableUser},
+		{"Enable Pierre when he is already enabled", "Pierre", http.StatusConflict, testEnableUser},
+
+		{"Disable Pierre", "Pierre", http.StatusOK, testDisableUser},
+		{"Disable Pierre when he is already disabled", "Pierre", http.StatusConflict, testDisableUser},
+		{"Enable Pierre", "Pierre", http.StatusOK, testEnableUser},
+	}
+	for _, tt := range tests {
+		t.Run(tt.testName, func(t *testing.T) { tt.testFunction(t, tt.username, tt.expCode) })
 	}
 }

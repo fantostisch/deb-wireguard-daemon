@@ -19,7 +19,10 @@ func configureWG(serv *Server) error {
 		log.Print("Couldn't add private key: ", err)
 	}
 	peers := make([]wgtypes.PeerConfig, 0)
-	for _, cfg := range serv.Config.Users {
+
+	enabledUsers := Filter(serv.Config.Users, func(k Key, v Value) bool { return !v.IsDisabled })
+
+	for _, cfg := range enabledUsers {
 		for publicKey, dev := range cfg.Clients {
 			pbkey, err := wgtypes.ParseKey(publicKey)
 			if err != nil {

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"path"
 	"strings"
@@ -25,22 +24,13 @@ func ShiftPath(p string) (head string, tail string) {
 }
 
 func (h API) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	firstSegment, _ := ShiftPath(req.URL.EscapedPath())
-	switch firstSegment {
-	case "config":
-		if err := req.ParseForm(); err != nil {
-			http.Error(w, fmt.Sprintf("Could not parse request body: %s", err), http.StatusBadRequest)
-			return
-		}
-		username := req.Form.Get("user_id")
-		if username == "" {
-			http.Error(w, "No user_id supplied.", http.StatusBadRequest)
-			return
-		}
-		h.UserHandler.ServeHTTP(w, req, username)
-	default:
-		http.NotFound(w, req)
+	URL := req.URL.EscapedPath()
+	username := req.FormValue("user_id")
+	if username == "" {
+		http.Error(w, "No user_id supplied.", http.StatusBadRequest)
+		return
 	}
+	h.UserHandler.ServeHTTP(w, req, URL, username)
 }
 
 func (serv *Server) StartAPI() error {

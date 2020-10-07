@@ -20,7 +20,8 @@ type Configuration struct {
 }
 
 type UserConfig struct {
-	Clients map[string]*ClientConfig
+	IsDisabled bool
+	Clients    map[string]*ClientConfig
 }
 
 type ClientConfig struct {
@@ -69,15 +70,16 @@ func (config *Configuration) Write() error {
 }
 
 // Get user configuration, create one if it doesn't exist
-func (config *Configuration) GetUserConfig(user string) *UserConfig {
-	us, ok := config.Users[user]
-	if !ok {
-		us = &UserConfig{
-			Clients: make(map[string]*ClientConfig),
+func (config *Configuration) GetUserConfig(username string) *UserConfig {
+	user := config.Users[username]
+	if user == nil {
+		user = &UserConfig{
+			IsDisabled: false,
+			Clients:    map[string]*ClientConfig{},
 		}
-		config.Users[user] = us
+		config.Users[username] = user
 	}
-	return us
+	return user
 }
 
 func NewClientConfig(name string, ip net.IP) ClientConfig {

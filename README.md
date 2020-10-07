@@ -84,11 +84,14 @@ Endpoint = <server ip>:51820
 ```
  
 ## API endpoints
-| Method | Url                                | Data        | Description                                                                                                  |
-|--------|------------------------------------|-------------|--------------------------------------------------------------------------------------------------------------|
-| GET    | /config?user_id=foo                |             | List all configs of the user.                                                                                |
-| POST   | /config?user_id=foo                | name=Phone  | Create client config. Let the server create a public private key pair.                                       |
-| POST   | /config?user_id=foo&public_key=ABC | name=Laptop | Create client config. Creating 2 client configs with the same public key will overwrite the existing config. |
-| DELETE | /config?user_id=foo&public_key=ABC |             | Delete client config.                                                                                        |
+
+| Method | Url                                | Data        | Description                                                                                                  |   |
+|--------|------------------------------------|-------------|--------------------------------------------------------------------------------------------------------------|---|
+| GET    | /config?user_id=foo                |             | List all configs of the user.                                                                                |   |
+| POST   | /config?user_id=foo                | name=Phone  | Create client config. Let the server create a public private key pair.                                       |   |
+| POST   | /config?user_id=foo&public_key=ABC | name=Laptop | Create client config. Creating 2 client configs with the same public key will overwrite the existing config. |   |
+| DELETE | /config?user_id=foo&public_key=ABC |             | Delete client config.                                                                                        |   |
+| POST   | /disable_user?user_id=foo          |             | Disable user                                                                                                 |   |
+| POST   | /enable_user?user_id=foo           |             | Enable user                                                                                                  |   |
 
 todo: document return values including errors
