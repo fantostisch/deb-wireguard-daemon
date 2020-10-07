@@ -205,7 +205,8 @@ func TestCreateConfigGenerateKeyPair(t *testing.T) {
 	requestBody := url.Values{
 		"name": {expName},
 	}
-	req, _ := http.NewRequest(http.MethodPost, "/config?"+parameters.Encode(), bytes.NewBufferString(requestBody.Encode()))
+	requestBodyString := bytes.NewBufferString(requestBody.Encode())
+	req, _ := http.NewRequest(http.MethodPost, "/config?"+parameters.Encode(), requestBodyString)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	respRec := httptest.NewRecorder()

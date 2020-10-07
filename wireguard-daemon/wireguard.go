@@ -30,7 +30,10 @@ func configureWG(serv *Server) error {
 			}
 			AllowedIPs := make([]net.IPNet, 1)
 			amountOfBitsInIPv4Address := 32
-			AllowedIPs[0] = net.IPNet{IP: dev.IP, Mask: net.CIDRMask(amountOfBitsInIPv4Address, amountOfBitsInIPv4Address)}
+			AllowedIPs[0] = net.IPNet{
+				IP:   dev.IP,
+				Mask: net.CIDRMask(amountOfBitsInIPv4Address, amountOfBitsInIPv4Address),
+			}
 			peer := wgtypes.PeerConfig{
 				PublicKey:         pbkey,
 				ReplaceAllowedIPs: true,

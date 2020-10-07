@@ -38,6 +38,9 @@ linters:
     - whitespace
 
 linters-settings:
+  lll:
+    line-length: 120
+    tab-width: 4
   gocritic:
     disabled-checks:
       commentFormatting

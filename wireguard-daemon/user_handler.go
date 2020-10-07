@@ -182,7 +182,8 @@ func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, url str
 				if name == "" {
 					contentType := req.Header.Get("Content-Type")
 					if contentType != form {
-						http.Error(w, fmt.Sprintf("Content-Type '%s' was not equal to %s'", contentType, form), http.StatusBadRequest)
+						message := fmt.Sprintf("Content-Type '%s' was not equal to %s'", contentType, form)
+						http.Error(w, message, http.StatusBadRequest)
 						return
 					}
 					http.Error(w, "No config name supplied.", http.StatusBadRequest)
@@ -196,7 +197,8 @@ func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, url str
 		} else {
 			publicKey, err := wgtypes.ParseKey(receivedPublicKey)
 			if err != nil {
-				http.Error(w, fmt.Sprintf("Invalid public key: '%s'. %s", receivedPublicKey, err), http.StatusBadRequest)
+				message := fmt.Sprintf("Invalid public key: '%s'. %s", receivedPublicKey, err)
+				http.Error(w, message, http.StatusBadRequest)
 				return
 			}
 			switch req.Method {
@@ -206,7 +208,8 @@ func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, url str
 				if name == "" {
 					contentType := req.Header.Get("Content-Type")
 					if contentType != form {
-						http.Error(w, fmt.Sprintf("Content-Type '%s' was not equal to %s'", contentType, form), http.StatusBadRequest)
+						message := fmt.Sprintf("Content-Type '%s' was not equal to %s'", contentType, form)
+						http.Error(w, message, http.StatusBadRequest)
 						return
 					}
 					http.Error(w, "No config name supplied.", http.StatusBadRequest)
