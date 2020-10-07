@@ -1,6 +1,23 @@
 # WireGuard Daemon
 
-#### It is not ready yet! The configuration of the DNS’s, Authentication etc are not implemented.
+Daemon for managing a WireGuard server using a REST API.
+Built for [eduVPN](https://eduvpn.org).
+
+This project is used by the
+[eduVPN portal with WireGuard support](https://github.com/fantostisch/vpn-user-portal).
+
+## API endpoints overview
+
+| Method | Url                                | Data        | Description                                                                                                  |
+|--------|------------------------------------|-------------|--------------------------------------------------------------------------------------------------------------|
+| GET    | /config?user_id=foo                |             | List all configs of the user.                                                                                |
+| POST   | /config?user_id=foo                | name=Phone  | Create client config. Let the server create a public private key pair.                                       |
+| POST   | /config?user_id=foo&public_key=ABC | name=Laptop | Create client config. Creating 2 client configs with the same public key will overwrite the existing config. |
+| DELETE | /config?user_id=foo&public_key=ABC |             | Delete client config.                                                                                        |
+| POST   | /disable_user?user_id=foo          |             | Disable user                                                                                                 |
+| POST   | /enable_user?user_id=foo           |             | Enable user                                                                                                  |
+
+todo: document return values including errors
 
 ## Setup
 
@@ -82,16 +99,3 @@ PublicKey = <server public key>
 AllowedIPs = 0.0.0.0/0
 Endpoint = <server ip>:51820
 ```
- 
-## API endpoints
-
-| Method | Url                                | Data        | Description                                                                                                  |   |
-|--------|------------------------------------|-------------|--------------------------------------------------------------------------------------------------------------|---|
-| GET    | /config?user_id=foo                |             | List all configs of the user.                                                                                |   |
-| POST   | /config?user_id=foo                | name=Phone  | Create client config. Let the server create a public private key pair.                                       |   |
-| POST   | /config?user_id=foo&public_key=ABC | name=Laptop | Create client config. Creating 2 client configs with the same public key will overwrite the existing config. |   |
-| DELETE | /config?user_id=foo&public_key=ABC |             | Delete client config.                                                                                        |   |
-| POST   | /disable_user?user_id=foo          |             | Disable user                                                                                                 |   |
-| POST   | /enable_user?user_id=foo           |             | Enable user                                                                                                  |   |
-
-todo: document return values including errors
