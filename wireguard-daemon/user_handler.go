@@ -117,12 +117,8 @@ func (h UserHandler) deleteConfig(w http.ResponseWriter, username string, public
 	h.Server.mutex.Lock()
 	defer h.Server.mutex.Unlock()
 	userConfig := h.Server.Config.Users[username]
-	if userConfig == nil {
-		http.Error(w, fmt.Sprintf("User '%s' not found", username), http.StatusNotFound)
-		return
-	}
 
-	if userConfig.Clients[publicKey] == nil {
+	if userConfig == nil || userConfig.Clients[publicKey] == nil {
 		message := fmt.Sprintf("Config with public key '%s' not found for user '%s", publicKey, username)
 		http.Error(w, message, http.StatusNotFound)
 		return
