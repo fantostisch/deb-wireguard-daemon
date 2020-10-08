@@ -76,7 +76,7 @@ func configureWG(serv *Server) error {
 		ReplacePeers: true,
 		Peers:        peers,
 	}
-	err = wg.ConfigureDevice("wg0", cfg)
+	err = wg.ConfigureDevice(*wgInterface, cfg)
 	if err != nil {
 		return fmt.Errorf("error configuring WireGuard device: %w", err)
 	}
