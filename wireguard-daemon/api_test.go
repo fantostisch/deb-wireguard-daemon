@@ -113,6 +113,42 @@ func TestGetConfigs(t *testing.T) {
 	}
 }
 
+func TestGetConfigsUnknownUser(t *testing.T) {
+	setup()
+	respRec := httptest.NewRecorder()
+	parameters := url.Values{
+		"user_id": {"George"},
+	}
+	req, _ := http.NewRequest(http.MethodGet, "/config?"+parameters.Encode(), nil)
+	apiRouter.ServeHTTP(respRec, req)
+	testHTTPStatus(t, *respRec, http.StatusOK)
+	got := respRec.Body.String()
+	exp := "{}\n"
+	if got != exp {
+		t.Errorf("Got: %v, Wanted: %v", got, exp)
+	}
+}
+
+func TestGetConfigsUserWithoutConfigs(t *testing.T) {
+	setup()
+	username := "Eric"
+	publicKey := testCreateConfigGenerateKeyPair(t, username)
+	testDeleteConfig(t, username, publicKey.String())
+
+	respRec := httptest.NewRecorder()
+	parameters := url.Values{
+		"user_id": {username},
+	}
+	req, _ := http.NewRequest(http.MethodGet, "/config?"+parameters.Encode(), nil)
+	apiRouter.ServeHTTP(respRec, req)
+	testHTTPStatus(t, *respRec, http.StatusOK)
+	got := respRec.Body.String()
+	exp := "{}\n"
+	if got != exp {
+		t.Errorf("Got: %v, Wanted: %v", got, exp)
+	}
+}
+
 func TestEmptyUsername(t *testing.T) {
 	respRec := httptest.NewRecorder()
 	requestBody := url.Values{
@@ -196,12 +232,11 @@ func TestCreateConfig(t *testing.T) {
 	}
 }
 
-func TestCreateConfigGenerateKeyPair(t *testing.T) {
-	setup()
+func testCreateConfigGenerateKeyPair(t *testing.T, username string) wgtypes.Key {
 	expName := "+/ My Little Phone 16 +/"
 
 	parameters := url.Values{
-		"user_id": {peterUsername},
+		"user_id": {username},
 	}
 	requestBody := url.Values{
 		"name": {expName},
@@ -244,15 +279,17 @@ func TestCreateConfigGenerateKeyPair(t *testing.T) {
 		clientPrivateKey = got.ClientPrivateKey
 	}
 
+	var publicKey wgtypes.Key
+
 	{
 		key, err := wgtypes.ParseKey(clientPrivateKey)
 		if err != nil {
 			t.Errorf("Could not parse private key: %s", err)
 		}
 
-		publicKey := key.PublicKey()
+		publicKey = key.PublicKey()
 
-		got := *server.Config.Users[peterUsername].Clients[publicKey.String()]
+		got := *server.Config.Users[username].Clients[publicKey.String()]
 
 		exp := ClientConfig{
 			Name:     expName,
@@ -264,13 +301,17 @@ func TestCreateConfigGenerateKeyPair(t *testing.T) {
 			t.Errorf("Got: %v, Wanted: %v", got, exp)
 		}
 	}
+	return publicKey
 }
 
-func TestDeleteConfig(t *testing.T) {
+func TestCreateConfigGenerateKeyPair(t *testing.T) {
 	setup()
-	publicKey := "Peters/Very+Rand0m/Public+Key/For+H1s/Phone="
+	testCreateConfigGenerateKeyPair(t, peterUsername)
+}
+
+func testDeleteConfig(t *testing.T, username string, publicKey string) {
 	parameters := url.Values{
-		"user_id":    {peterUsername},
+		"user_id":    {username},
 		"public_key": {publicKey},
 	}
 	req, _ := http.NewRequest(http.MethodDelete, "/config?"+parameters.Encode(), nil)
@@ -280,13 +321,18 @@ func TestDeleteConfig(t *testing.T) {
 
 	testHTTPStatus(t, *respRec, http.StatusOK)
 
-	config, exists := server.Config.Users[peterUsername].Clients[publicKey]
+	config, exists := server.Config.Users[username].Clients[publicKey]
 	if exists {
 		t.Error("Config exists")
 	}
 	if config != nil {
 		t.Error(config, "not nil")
 	}
+}
+
+func TestDeleteConfig(t *testing.T) {
+	setup()
+	testDeleteConfig(t, peterUsername, "Peters/Very+Rand0m/Public+Key/For+H1s/Phone=")
 }
 
 func testDisableUser(t *testing.T, username string, expCode int) {
