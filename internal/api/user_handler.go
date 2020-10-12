@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"encoding/json"
@@ -20,7 +20,7 @@ func (h UserHandler) getConfigs(w http.ResponseWriter, username string) {
 	h.Server.mutex.Lock()
 	defer h.Server.mutex.Unlock()
 
-	userConfig := h.Server.Config.Users[username]
+	userConfig := h.Server.Storage.Data.Users[username]
 	if userConfig != nil {
 		clients = userConfig.Clients
 	}
@@ -47,7 +47,7 @@ func (h UserHandler) newConfig(username string, publicKey string, name string) c
 	h.Server.mutex.Lock()
 	defer h.Server.mutex.Unlock()
 
-	userConfig := h.Server.Config.GetUserConfig(username)
+	userConfig := h.Server.Storage.GetUserConfig(username)
 
 	ip := h.Server.allocateIP()
 	config := NewClientConfig(name, ip)
@@ -56,7 +56,7 @@ func (h UserHandler) newConfig(username string, publicKey string, name string) c
 
 	return createConfigResponse{
 		IP:              config.IP,
-		ServerPublicKey: h.Server.Config.PublicKey,
+		ServerPublicKey: h.Server.Storage.Data.PublicKey,
 	}
 }
 
@@ -116,7 +116,7 @@ func (h UserHandler) createConfig(w http.ResponseWriter, username string, public
 func (h UserHandler) deleteConfig(w http.ResponseWriter, username string, publicKey string) {
 	h.Server.mutex.Lock()
 	defer h.Server.mutex.Unlock()
-	userConfig := h.Server.Config.Users[username]
+	userConfig := h.Server.Storage.Data.Users[username]
 
 	if userConfig == nil || userConfig.Clients[publicKey] == nil {
 		message := fmt.Sprintf("Config with public key '%s' not found for user '%s", publicKey, username)
@@ -137,7 +137,7 @@ func (h UserHandler) deleteConfig(w http.ResponseWriter, username string, public
 func (h UserHandler) setDisabled(username string, disabled bool) bool {
 	h.Server.mutex.Lock()
 	defer h.Server.mutex.Unlock()
-	userConfig := h.Server.Config.GetUserConfig(username)
+	userConfig := h.Server.Storage.GetUserConfig(username)
 	if userConfig.IsDisabled == disabled {
 		return false
 	}

@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"bytes"
@@ -10,6 +10,8 @@ import (
 	"net/url"
 	"reflect"
 	"testing"
+
+	"github.com/fantostisch/wireguard-daemon/pkg/wgmanager"
 
 	"github.com/google/go-cmp/cmp"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
@@ -36,6 +38,14 @@ func TestNotEnoughSegments(t *testing.T) {
 	}
 }
 
+type TestWGManager struct {
+	returnValue error
+}
+
+func (wm TestWGManager) ConfigureWG(privateKey string, users []wgmanager.User) error {
+	return wm.returnValue
+}
+
 //todo: test written data instead of in memory data
 func newServer(server *Server) {
 	var ipAddr, ipNet, _ = net.ParseCIDR("10.0.0.1/8")
@@ -43,27 +53,27 @@ func newServer(server *Server) {
 	*server = Server{
 		IPAddr:        ipAddr,
 		clientIPRange: ipNet,
-		configureWG: func(s *Server) error {
-			return nil
-		},
-		Config: &Configuration{
-			configPath: "/dev/null",
-			PrivateKey: "server_private_key",
-			PublicKey:  "server_public_key",
-			Users: map[string]*UserConfig{
-				peterUsername: &UserConfig{
-					Clients: map[string]*ClientConfig{
-						"public/key1=": &ClientConfig{
-							Name: "Client config 1",
-							IP:   net.IPv4(10, 0, 0, 1),
-						},
-						"Peters/Very+Rand0m/Public+Key/For+H1s/Phonc=": &ClientConfig{
-							Name: "Client config 2",
-							IP:   net.IPv4(10, 0, 0, 2),
-						},
-						"public+key3=": &ClientConfig{
-							Name: "Client config 3",
-							IP:   net.IPv4(10, 0, 0, 3),
+		wgManager:     TestWGManager{returnValue: nil},
+		Storage: &FileStorage{
+			filePath: "/dev/null",
+			Data: Data{
+				PrivateKey: "server_private_key",
+				PublicKey:  "server_public_key",
+				Users: map[string]*UserConfig{
+					peterUsername: &UserConfig{
+						Clients: map[string]*ClientConfig{
+							"public/key1=": &ClientConfig{
+								Name: "Client config 1",
+								IP:   net.IPv4(10, 0, 0, 1),
+							},
+							"Peters/Very+Rand0m/Public+Key/For+H1s/Phonc=": &ClientConfig{
+								Name: "Client config 2",
+								IP:   net.IPv4(10, 0, 0, 2),
+							},
+							"public+key3=": &ClientConfig{
+								Name: "Client config 3",
+								IP:   net.IPv4(10, 0, 0, 3),
+							},
 						},
 					},
 				},
@@ -107,7 +117,7 @@ func TestGetConfigs(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error decoding json: %s", err)
 	}
-	exp := server.Config.Users[peterUsername].Clients
+	exp := server.Storage.Data.Users[peterUsername].Clients
 	if !reflect.DeepEqual(got, exp) {
 		t.Errorf("Got: %v, Wanted: %v", got, exp)
 	}
@@ -195,7 +205,7 @@ func testCreateConfig(t *testing.T, username string) {
 
 		exp := response{
 			IP:              expIPString,
-			ServerPublicKey: server.Config.PublicKey,
+			ServerPublicKey: server.Storage.Data.PublicKey,
 		}
 
 		if got != exp {
@@ -204,7 +214,7 @@ func testCreateConfig(t *testing.T, username string) {
 	}
 
 	{
-		got := *server.Config.Users[username].Clients[publicKey]
+		got := *server.Storage.Data.Users[username].Clients[publicKey]
 
 		exp := ClientConfig{
 			Name:     expName,
@@ -269,7 +279,7 @@ func testCreateConfigGenerateKeyPair(t *testing.T, username string) wgtypes.Key 
 		exp := response{
 			ClientPrivateKey: got.ClientPrivateKey, //todo: test
 			IP:               expIPString,
-			ServerPublicKey:  server.Config.PublicKey,
+			ServerPublicKey:  server.Storage.Data.PublicKey,
 		}
 
 		if got != exp {
@@ -289,7 +299,7 @@ func testCreateConfigGenerateKeyPair(t *testing.T, username string) wgtypes.Key 
 
 		publicKey = key.PublicKey()
 
-		got := *server.Config.Users[username].Clients[publicKey.String()]
+		got := *server.Storage.Data.Users[username].Clients[publicKey.String()]
 
 		exp := ClientConfig{
 			Name:     expName,
@@ -321,7 +331,7 @@ func testDeleteConfig(t *testing.T, username string, publicKey string) {
 
 	testHTTPStatus(t, *respRec, http.StatusOK)
 
-	config, exists := server.Config.Users[username].Clients[publicKey]
+	config, exists := server.Storage.Data.Users[username].Clients[publicKey]
 	if exists {
 		t.Error("Config exists")
 	}
@@ -346,7 +356,7 @@ func testDisableUser(t *testing.T, username string, expCode int) {
 
 	testHTTPStatus(t, *respRec, expCode)
 
-	disabled := server.Config.Users[username].IsDisabled
+	disabled := server.Storage.Data.Users[username].IsDisabled
 	if !disabled {
 		t.Error("User not disabled.")
 	}
@@ -363,7 +373,7 @@ func testEnableUser(t *testing.T, username string, expCode int) {
 
 	testHTTPStatus(t, *respRec, expCode)
 
-	disabled := server.Config.Users[username].IsDisabled
+	disabled := server.Storage.Data.Users[username].IsDisabled
 	if disabled {
 		t.Error("User disabled.")
 	}
@@ -398,8 +408,8 @@ func TestDisablingAndEnablingUser(t *testing.T) {
 
 func TestWireGuardReconfigureError(t *testing.T) {
 	setup()
-	server.configureWG = func(s *Server) error {
-		return errors.New("")
+	server.wgManager = TestWGManager{
+		returnValue: errors.New("oops"),
 	}
 
 	testDisableUser(t, peterUsername, http.StatusInternalServerError)

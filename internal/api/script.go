@@ -1,14 +1,14 @@
-package main
+package api
 
 import (
 	"log"
 	"os/exec"
 )
 
-func ExecScript(scriptName string) error {
+func ExecScript(scriptName string, wgInterface string) error {
 	path := "../scripts/" + scriptName
 
-	start := exec.Command("sh", path, *wgInterface)
+	start := exec.Command("sh", path, wgInterface)
 	out, err := start.CombinedOutput()
 	if err != nil {
 		log.Printf("Error executing %s: %s", scriptName, out)

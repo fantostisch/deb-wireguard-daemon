@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"net/http"
@@ -33,9 +33,9 @@ func (h API) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	h.UserHandler.ServeHTTP(w, req, URL, username)
 }
 
-func (serv *Server) StartAPI() error {
+func (serv *Server) StartAPI(listenAddress string) error {
 	var router http.Handler = API{
 		UserHandler: UserHandler{Server: serv},
 	}
-	return http.ListenAndServe(*listenAddr, router)
+	return http.ListenAndServe(listenAddress, router)
 }

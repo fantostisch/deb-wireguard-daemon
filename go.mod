@@ -1,4 +1,4 @@
-module eduvpn.org/wireguard-daemon
+module github.com/fantostisch/wireguard-daemon
 
 go 1.14
 
