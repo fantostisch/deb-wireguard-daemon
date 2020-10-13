@@ -34,7 +34,11 @@ func main() {
 	}
 	flag.Parse()
 
-	wgManager := wgmanager.WGManager{WGInterface: *wgInterface, WGPort: wgPort}
+	wgManager, err := wgmanager.New(*wgInterface, wgPort)
+	if err != nil {
+		log.Fatal("Error creating WireGuard manager: ", err)
+	}
+
 	storage := api.NewFileStorage(*storageFile)
 	server := api.NewServer(storage, wgManager, *wgInterface)
 

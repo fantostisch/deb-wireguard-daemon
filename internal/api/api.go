@@ -7,7 +7,8 @@ import (
 )
 
 type API struct {
-	UserHandler UserHandler
+	UserHandler       UserHandler
+	ConnectionHandler ConnectionHandler
 }
 
 // Based on https://blog.merovius.de/2017/06/18/how-not-to-use-an-http-router.html
@@ -26,16 +27,17 @@ func ShiftPath(p string) (head string, tail string) {
 func (h API) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	URL := req.URL.EscapedPath()
 	username := req.FormValue("user_id")
-	if username == "" {
-		http.Error(w, "No user_id supplied.", http.StatusBadRequest)
+	if username != "" {
+		h.UserHandler.ServeHTTP(w, req, URL, username)
 		return
 	}
-	h.UserHandler.ServeHTTP(w, req, URL, username)
+	h.ConnectionHandler.ServeHTTP(w, req, URL)
 }
 
 func (serv *Server) StartAPI(listenAddress string) error {
 	var router http.Handler = API{
-		UserHandler: UserHandler{Server: serv},
+		UserHandler:       UserHandler{Server: serv},
+		ConnectionHandler: ConnectionHandler{wgManager: serv.wgManager, storage: serv.Storage},
 	}
 	return http.ListenAndServe(listenAddress, router)
 }

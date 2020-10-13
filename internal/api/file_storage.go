@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"log"
 	"net"
@@ -95,4 +96,15 @@ func NewClientConfig(name string, ip net.IP) ClientConfig {
 		Modified: now,
 	}
 	return config
+}
+
+func (storage *FileStorage) GetUsernameAndConfig(publicKey string) (string, ClientConfig, error) {
+	for username, u := range storage.Data.Users {
+		for pk, config := range u.Clients {
+			if publicKey == pk {
+				return username, *config, nil
+			}
+		}
+	}
+	return "", ClientConfig{}, errors.New("no user found for this public key")
 }

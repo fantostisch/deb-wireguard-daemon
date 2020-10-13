@@ -1,6 +1,10 @@
 package wgmanager
 
-import "net"
+import (
+	"net"
+
+	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
+)
 
 type User struct {
 	PublicKey string
@@ -9,4 +13,5 @@ type User struct {
 
 type IWGManager interface {
 	ConfigureWG(privateKey string, users []User) error
+	GetConnections() ([]wgtypes.Peer, error)
 }
