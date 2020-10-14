@@ -35,7 +35,8 @@ func NewFileStorage(filePath string, privateKey PrivateKey, publicKey PublicKey)
 	case err == nil:
 		return fmt.Errorf("file '%s' already exists: ", filePath)
 	case os.IsNotExist(err):
-		return storage.Write()
+		storage.dataMutex.Lock()
+		return storage.write()
 	default:
 		return err
 	}
@@ -56,14 +57,13 @@ func ReadFile(filePath string) (*FileStorage, error) {
 }
 
 // Write config to disk
-func (s *FileStorage) Write() error {
-	s.dataMutex.Lock()
+// Mutex should already be locked, we will unlock it before writing everything to disk.
+func (s *FileStorage) write() error {
 	data, err := json.MarshalIndent(s.data, "", "  ")
+	s.dataMutex.Unlock()
 	if err != nil {
-		s.dataMutex.Unlock()
 		return err
 	}
-	s.dataMutex.Unlock()
 	return ioutil.WriteFile(s.filePath, data, 0600)
 }
 
@@ -114,9 +114,8 @@ func (s *FileStorage) getOrCreateUser(username UserID) *User {
 }
 
 //todo: changing the name should not also update the ip
-func (s *FileStorage) UpdateOrCreateConfig(username UserID, publicKey PublicKey, config ClientConfig) bool {
+func (s *FileStorage) UpdateOrCreateConfig(username UserID, publicKey PublicKey, config ClientConfig) (bool, error) {
 	s.dataMutex.Lock()
-	defer s.dataMutex.Unlock()
 
 	allocatedIPs := s.getAllocatedIPsUnsafe()
 
@@ -128,28 +127,30 @@ func (s *FileStorage) UpdateOrCreateConfig(username UserID, publicKey PublicKey,
 		}
 	}
 	if allocated {
-		return false
+		s.dataMutex.Unlock()
+		return false, nil
 	}
 
 	s.getOrCreateUser(username).Clients[publicKey] = config
-	return true
+	return true, s.write()
 }
 
 // Return true if config was successfully deleted, false otherwise.
-func (s *FileStorage) DeleteConfig(username UserID, publicKey PublicKey) bool {
+func (s *FileStorage) DeleteConfig(username UserID, publicKey PublicKey) (bool, error) {
 	s.dataMutex.Lock()
-	defer s.dataMutex.Unlock()
 
 	user := s.data.Users[username]
 	if user == nil {
-		return false
+		s.dataMutex.Unlock()
+		return false, nil
 	}
 	_, exist := user.Clients[publicKey]
 	if !exist {
-		return false
+		s.dataMutex.Unlock()
+		return false, nil
 	}
 	delete(user.Clients, publicKey)
-	return true
+	return true, s.write()
 }
 
 func (s *FileStorage) GetEnabledUsers() []User {
@@ -166,16 +167,16 @@ func (s *FileStorage) GetEnabledUsers() []User {
 }
 
 // SetDisabled disables or enables a user and returns if the value was changed
-func (s *FileStorage) SetDisabled(username UserID, disabled bool) bool {
+func (s *FileStorage) SetDisabled(username UserID, disabled bool) (bool, error) {
 	s.dataMutex.Lock()
-	defer s.dataMutex.Unlock()
 
 	user := s.getOrCreateUser(username)
 	if user.IsDisabled == disabled {
-		return false
+		s.dataMutex.Unlock()
+		return false, nil
 	}
 	user.IsDisabled = disabled
-	return true
+	return true, s.write()
 }
 
 func (s *FileStorage) getAllocatedIPsUnsafe() []net.IP {

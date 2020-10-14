@@ -112,20 +112,6 @@ func (s *Server) configureWG() error {
 	return s.wgManager.ConfigureWG(s.Storage.GetServerPrivateKey(), users)
 }
 
-func (s *Server) reconfigureWG() error {
-	err := s.Storage.Write()
-	if err != nil {
-		log.Fatal("Error writing configuration file: ", err)
-		return err
-	}
-	err = s.configureWG()
-	if err != nil {
-		log.Printf("Error configuring file: %s", err)
-		return err
-	}
-	return nil
-}
-
 func (s *Server) Stop() error {
 	err := ExecScript("stop.sh", s.wgInterface)
 	return err

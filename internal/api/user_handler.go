@@ -49,7 +49,10 @@ func (h UserHandler) newConfig(username UserID, publicKey PublicKey, name string
 			return createConfigResponse{}, fmt.Errorf("error getting IP Address: %w", err)
 		}
 		config = NewClientConfig(name, ip)
-		success := h.Server.Storage.UpdateOrCreateConfig(username, publicKey, config)
+		success, err := h.Server.Storage.UpdateOrCreateConfig(username, publicKey, config)
+		if err != nil {
+			return createConfigResponse{}, err
+		}
 		if success {
 			break
 		}
@@ -65,7 +68,7 @@ func (h UserHandler) newConfig(username UserID, publicKey PublicKey, name string
 // a InternalServerError and returns false. If it succeeds no response is
 // written and true is returned.
 func (h UserHandler) reconfigureWGHTTP(w http.ResponseWriter) bool {
-	if err := h.Server.reconfigureWG(); err != nil {
+	if err := h.Server.configureWG(); err != nil {
 		message := fmt.Sprintf("Error reconfiguring WireGuard: %s", err)
 		http.Error(w, message, http.StatusInternalServerError)
 		return false
@@ -126,7 +129,12 @@ func (h UserHandler) createConfig(w http.ResponseWriter, username UserID, public
 }
 
 func (h UserHandler) deleteConfig(w http.ResponseWriter, username UserID, publicKey PublicKey) {
-	deleted := h.Server.Storage.DeleteConfig(username, publicKey)
+	deleted, err := h.Server.Storage.DeleteConfig(username, publicKey)
+	if err != nil {
+		message := fmt.Sprintf("Error deleting config: %s", err)
+		http.Error(w, message, http.StatusInternalServerError)
+		return
+	}
 
 	if !deleted {
 		message := fmt.Sprintf(
@@ -143,7 +151,13 @@ func (h UserHandler) deleteConfig(w http.ResponseWriter, username UserID, public
 }
 
 func (h UserHandler) setDisabledHTTP(w http.ResponseWriter, username UserID, disabled bool, conflictMessage string) {
-	if !h.Server.Storage.SetDisabled(username, disabled) {
+	valueChanged, err := h.Server.Storage.SetDisabled(username, disabled)
+	if err != nil {
+		message := fmt.Sprintf("Error enabling/disabling user: %s", err)
+		http.Error(w, message, http.StatusInternalServerError)
+		return
+	}
+	if !valueChanged {
 		http.Error(w, conflictMessage, http.StatusConflict)
 	}
 
