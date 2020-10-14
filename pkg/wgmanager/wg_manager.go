@@ -56,18 +56,22 @@ func (wgm WGManager) ConfigureWG(privateKey PrivateKey, peers []Peer) error {
 	return nil
 }
 
-func (wgm WGManager) AddPeer(peer Peer) error {
-	wgPeer := wgtypes.PeerConfig{
-		Remove:            false,
-		UpdateOnly:        false,
-		PublicKey:         peer.PublicKey.Key,
-		ReplaceAllowedIPs: true,
-		AllowedIPs:        peer.AllowedIPs,
+func (wgm WGManager) AddPeers(peers []Peer) error {
+	wgPeers := []wgtypes.PeerConfig{}
+
+	for _, peer := range peers {
+		wgPeers = append(wgPeers, wgtypes.PeerConfig{
+			Remove:            false,
+			UpdateOnly:        false,
+			PublicKey:         peer.PublicKey.Key,
+			ReplaceAllowedIPs: true,
+			AllowedIPs:        peer.AllowedIPs,
+		})
 	}
 
 	cfg := wgtypes.Config{
 		ReplacePeers: false,
-		Peers:        []wgtypes.PeerConfig{wgPeer},
+		Peers:        wgPeers,
 	}
 	err := wgm.client.ConfigureDevice(wgm.WGInterface, cfg)
 	if err != nil {

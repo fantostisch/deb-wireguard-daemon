@@ -6,6 +6,8 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/fantostisch/wireguard-daemon/pkg/wgmanager"
+
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
@@ -15,12 +17,7 @@ type UserHandler struct {
 
 // Get all configs of a user.
 func (h UserHandler) getConfigs(w http.ResponseWriter, username UserID) {
-	clients := map[PublicKey]ClientConfig{}
-
-	userConfig, available := h.Server.Storage.GetUserConfig(username)
-	if available {
-		clients = userConfig.Clients
-	}
+	clients := h.Server.Storage.GetUserClients(username)
 
 	if err := json.NewEncoder(w).Encode(clients); err != nil {
 		message := fmt.Sprintf("Error encoding response as JSON: %s", err)
@@ -53,7 +50,7 @@ func (h UserHandler) newConfig(username UserID, publicKey PublicKey, name string
 		if err != nil {
 			return createConfigResponse{}, fmt.Errorf("error saving config: %w", err)
 		}
-		if err := h.Server.wgManager.AddPeer(ClientToWGPeer(publicKey, config)); err != nil {
+		if err := h.Server.wgManager.AddPeers([]wgmanager.Peer{ClientToWGPeer(publicKey, config)}); err != nil {
 			return createConfigResponse{}, fmt.Errorf("error config peer to WireGuard: %w", err)
 		}
 		if success {
@@ -160,7 +157,20 @@ func (h UserHandler) setDisabledHTTP(w http.ResponseWriter, username UserID, dis
 		http.Error(w, conflictMessage, http.StatusConflict)
 	}
 
-	if !h.reconfigureWGHTTP(w) {
+	clients := h.Server.Storage.GetUserClients(username)
+	var wgPeers []wgmanager.Peer
+	for publicKey, config := range clients {
+		wgPeers = append(wgPeers, ClientToWGPeer(publicKey, config))
+	}
+
+	if disabled {
+		err = h.Server.configureWG()
+	} else {
+		err = h.Server.wgManager.AddPeers(wgPeers)
+	}
+	if err != nil {
+		message := fmt.Sprintf("Error reconfiguring WireGuard: %s", err)
+		http.Error(w, message, http.StatusInternalServerError)
 		return
 	}
 

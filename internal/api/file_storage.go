@@ -75,15 +75,15 @@ func (s *FileStorage) GetServerPublicKey() PublicKey {
 	return s.data.PublicKey
 }
 
-func (s *FileStorage) GetUserConfig(username UserID) (User, bool) {
+func (s *FileStorage) GetUserClients(username UserID) map[PublicKey]ClientConfig {
 	s.dataMutex.Lock()
 	defer s.dataMutex.Unlock()
 
 	userConfig := s.data.Users[username]
 	if userConfig == nil {
-		return User{}, false
+		return map[PublicKey]ClientConfig{}
 	}
-	return *userConfig, true
+	return userConfig.Clients
 }
 
 func (s *FileStorage) GetUsernameAndConfig(publicKey PublicKey) (UserID, ClientConfig, error) {

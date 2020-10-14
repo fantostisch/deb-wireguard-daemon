@@ -32,7 +32,7 @@ func (wgm TestWGManager) ConfigureWG(privateKey PrivateKey, peers []wgmanager.Pe
 	return wgm.configureWG
 }
 
-func (wgm TestWGManager) AddPeer(peer wgmanager.Peer) error {
+func (wgm TestWGManager) AddPeers(peers []wgmanager.Peer) error {
 	return wgm.configureWG
 }
 
