@@ -95,9 +95,16 @@ func (s *Server) configureWG() error {
 	var users []wgmanager.User
 	for _, user := range enabledUsers {
 		for publicKey, config := range user.Clients {
+			allowedIPs := make([]net.IPNet, 1)
+			amountOfBitsInIPv4Address := 32
+			allowedIPs[0] = net.IPNet{
+				IP:   config.IP,
+				Mask: net.CIDRMask(amountOfBitsInIPv4Address, amountOfBitsInIPv4Address),
+			}
+
 			users = append(users, wgmanager.User{
-				PublicKey: publicKey,
-				IP:        config.IP,
+				PublicKey:  publicKey,
+				AllowedIPs: allowedIPs,
 			})
 		}
 	}

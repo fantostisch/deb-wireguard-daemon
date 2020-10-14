@@ -7,8 +7,8 @@ import (
 )
 
 type User struct {
-	PublicKey PublicKey
-	IP        net.IP
+	PublicKey  PublicKey
+	AllowedIPs []net.IPNet
 }
 
 type IWGManager interface {

@@ -2,7 +2,6 @@ package wgmanager
 
 import (
 	"fmt"
-	"net"
 	"time"
 
 	"golang.zx2c4.com/wireguard/wgctrl"
@@ -36,16 +35,10 @@ func (wgm WGManager) ConfigureWG(privateKey PrivateKey, users []User) error {
 	peers := []wgtypes.PeerConfig{}
 
 	for _, user := range users {
-		AllowedIPs := make([]net.IPNet, 1)
-		amountOfBitsInIPv4Address := 32
-		AllowedIPs[0] = net.IPNet{
-			IP:   user.IP,
-			Mask: net.CIDRMask(amountOfBitsInIPv4Address, amountOfBitsInIPv4Address),
-		}
 		peer := wgtypes.PeerConfig{
 			PublicKey:         user.PublicKey.Key,
 			ReplaceAllowedIPs: true,
-			AllowedIPs:        AllowedIPs,
+			AllowedIPs:        user.AllowedIPs,
 		}
 		peers = append(peers, peer)
 	}
