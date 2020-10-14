@@ -51,7 +51,10 @@ func (h UserHandler) newConfig(username UserID, publicKey PublicKey, name string
 		config = NewClientConfig(name, ip)
 		success, err := h.Server.Storage.UpdateOrCreateConfig(username, publicKey, config)
 		if err != nil {
-			return createConfigResponse{}, err
+			return createConfigResponse{}, fmt.Errorf("error saving config: %w", err)
+		}
+		if err := h.Server.wgManager.AddPeer(ClientToWGPeer(publicKey, config)); err != nil {
+			return createConfigResponse{}, fmt.Errorf("error config peer to WireGuard: %w", err)
 		}
 		if success {
 			break
@@ -113,10 +116,6 @@ func (h UserHandler) createConfig(w http.ResponseWriter, username UserID, public
 	if err != nil {
 		message := fmt.Sprintf("Error creating config: %s", err)
 		http.Error(w, message, http.StatusInternalServerError)
-		return
-	}
-
-	if !h.reconfigureWGHTTP(w) {
 		return
 	}
 

@@ -32,3 +32,16 @@ func NewClientConfig(name string, ip net.IP) ClientConfig {
 	}
 	return config
 }
+
+func ClientToWGPeer(publicKey PublicKey, client ClientConfig) wgmanager.Peer {
+	allowedIPs := make([]net.IPNet, 1)
+	amountOfBitsInIPv4Address := 32
+	allowedIPs[0] = net.IPNet{
+		IP:   client.IP,
+		Mask: net.CIDRMask(amountOfBitsInIPv4Address, amountOfBitsInIPv4Address),
+	}
+	return wgmanager.Peer{
+		PublicKey:  publicKey,
+		AllowedIPs: allowedIPs,
+	}
+}

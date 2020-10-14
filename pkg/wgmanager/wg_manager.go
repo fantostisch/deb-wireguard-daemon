@@ -56,6 +56,26 @@ func (wgm WGManager) ConfigureWG(privateKey PrivateKey, peers []Peer) error {
 	return nil
 }
 
+func (wgm WGManager) AddPeer(peer Peer) error {
+	wgPeer := wgtypes.PeerConfig{
+		Remove:            false,
+		UpdateOnly:        false,
+		PublicKey:         peer.PublicKey.Key,
+		ReplaceAllowedIPs: true,
+		AllowedIPs:        peer.AllowedIPs,
+	}
+
+	cfg := wgtypes.Config{
+		ReplacePeers: false,
+		Peers:        []wgtypes.PeerConfig{wgPeer},
+	}
+	err := wgm.client.ConfigureDevice(wgm.WGInterface, cfg)
+	if err != nil {
+		return fmt.Errorf("error adding peer to WireGuard: %w", err)
+	}
+	return nil
+}
+
 // GetConnections lists a config as connected when a handshake has been
 // performed with the client in the last 3 minutes. If a WireGuard client
 // did not perform a handshake in the last 3 minutes, all packets will be

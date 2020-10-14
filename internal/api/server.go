@@ -92,24 +92,14 @@ func (s *Server) enableIPForwarding() error {
 func (s *Server) configureWG() error {
 	enabledUsers := s.Storage.GetEnabledUsers()
 
-	var users []wgmanager.Peer
+	var wgPeers []wgmanager.Peer
 	for _, user := range enabledUsers {
 		for publicKey, config := range user.Clients {
-			allowedIPs := make([]net.IPNet, 1)
-			amountOfBitsInIPv4Address := 32
-			allowedIPs[0] = net.IPNet{
-				IP:   config.IP,
-				Mask: net.CIDRMask(amountOfBitsInIPv4Address, amountOfBitsInIPv4Address),
-			}
-
-			users = append(users, wgmanager.Peer{
-				PublicKey:  publicKey,
-				AllowedIPs: allowedIPs,
-			})
+			wgPeers = append(wgPeers, ClientToWGPeer(publicKey, config))
 		}
 	}
 
-	return s.wgManager.ConfigureWG(s.Storage.GetServerPrivateKey(), users)
+	return s.wgManager.ConfigureWG(s.Storage.GetServerPrivateKey(), wgPeers)
 }
 
 func (s *Server) Stop() error {

@@ -14,5 +14,6 @@ type Peer struct {
 type IWGManager interface {
 	GeneratePrivateKey() (PrivateKey, error)
 	ConfigureWG(privateKey PrivateKey, peers []Peer) error
+	AddPeer(peer Peer) error
 	GetConnections() ([]wgtypes.Peer, error)
 }
