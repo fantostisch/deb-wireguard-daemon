@@ -66,7 +66,7 @@ func main() {
 		for range c {
 			stopErr := server.Stop()
 			if stopErr != nil {
-				fmt.Print("Error stopping server: ", stopErr)
+				fmt.Println("Error stopping server: ", stopErr)
 			}
 			os.Exit(0)
 		}
@@ -74,11 +74,13 @@ func main() {
 
 	startErr := server.Start()
 	if startErr != nil {
-		fmt.Print("Error starting server: ", startErr)
+		fmt.Println("Error starting server: ", startErr)
+		return
 	}
 	startAPIErr := server.StartAPI(*listenAddress)
 	if startAPIErr != nil {
 		fmt.Println("Error starting API: ", startAPIErr)
+		return
 	}
 }
 
