@@ -68,16 +68,10 @@ func (s *FileStorage) Write() error {
 }
 
 func (s *FileStorage) GetServerPrivateKey() PublicKey {
-	s.dataMutex.Lock()
-	defer s.dataMutex.Unlock()
-
 	return s.data.PrivateKey
 }
 
 func (s *FileStorage) GetServerPublicKey() PublicKey {
-	s.dataMutex.Lock()
-	defer s.dataMutex.Unlock()
-
 	return s.data.PublicKey
 }
 
