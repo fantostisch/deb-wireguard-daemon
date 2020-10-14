@@ -54,7 +54,8 @@ func main() {
 
 	storage, err := api.ReadFile(*storageFile)
 	if err != nil {
-		log.Fatal("Error reading stored data: ", err)
+		log.Fatal("Error reading stored data. "+
+			"If you have not created a config file yet, create one using --init. Error: ", err)
 	}
 	server := api.NewServer(storage, wgManager, *wgInterface)
 
