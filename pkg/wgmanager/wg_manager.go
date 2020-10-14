@@ -27,50 +27,38 @@ func New(wgInterface string, wgPort int) (*WGManager, error) {
 	}, nil
 }
 
-func (wgm WGManager) ConfigureWG(privateKey string, users []User) error {
-	keys, err := wgtypes.ParseKey(privateKey)
-	if err != nil {
-		return fmt.Errorf("could not parse server private key: %w", err)
-	}
-	peers := make([]wgtypes.PeerConfig, 0)
+func (wgm WGManager) GeneratePrivateKey() (PrivateKey, error) {
+	privateKey, err := wgtypes.GeneratePrivateKey()
+	return PrivateKey{privateKey}, err
+}
 
-	var parsePublicKeyErrors []ParsePublicKeyError
+func (wgm WGManager) ConfigureWG(privateKey PrivateKey, users []User) error {
+	peers := []wgtypes.PeerConfig{}
 
 	for _, user := range users {
-		publicKey, err := wgtypes.ParseKey(user.PublicKey)
-		if err != nil {
-			parsePublicKeyErrors = append(parsePublicKeyErrors, ParsePublicKeyError{
-				publicKey: user.PublicKey,
-				err:       err,
-			})
-		} else {
-			AllowedIPs := make([]net.IPNet, 1)
-			amountOfBitsInIPv4Address := 32
-			AllowedIPs[0] = net.IPNet{
-				IP:   user.IP,
-				Mask: net.CIDRMask(amountOfBitsInIPv4Address, amountOfBitsInIPv4Address),
-			}
-			peer := wgtypes.PeerConfig{
-				PublicKey:         publicKey,
-				ReplaceAllowedIPs: true,
-				AllowedIPs:        AllowedIPs,
-			}
-			peers = append(peers, peer)
+		AllowedIPs := make([]net.IPNet, 1)
+		amountOfBitsInIPv4Address := 32
+		AllowedIPs[0] = net.IPNet{
+			IP:   user.IP,
+			Mask: net.CIDRMask(amountOfBitsInIPv4Address, amountOfBitsInIPv4Address),
 		}
+		peer := wgtypes.PeerConfig{
+			PublicKey:         user.PublicKey.Key,
+			ReplaceAllowedIPs: true,
+			AllowedIPs:        AllowedIPs,
+		}
+		peers = append(peers, peer)
 	}
 
 	cfg := wgtypes.Config{
-		PrivateKey:   &keys,
+		PrivateKey:   &privateKey.Key,
 		ListenPort:   &wgm.WGPort,
 		ReplacePeers: true,
 		Peers:        peers,
 	}
-	err = wgm.client.ConfigureDevice(wgm.WGInterface, cfg)
+	err := wgm.client.ConfigureDevice(wgm.WGInterface, cfg)
 	if err != nil {
 		return fmt.Errorf("error configuring WireGuard device: %w", err)
-	}
-	if len(parsePublicKeyErrors) > 0 {
-		return ParsePublicKeyErrorList{errors: parsePublicKeyErrors}
 	}
 	return nil
 }

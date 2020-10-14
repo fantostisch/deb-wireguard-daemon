@@ -46,3 +46,5 @@ issues:
   exclude:
     # https://github.com/kyoh86/scopelint/issues/4
     - Using the variable on range scope .* in function literal
+    # Unkeyed fields should be allowed for wgmanager.PrivateKey
+    - composites

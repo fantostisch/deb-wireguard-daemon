@@ -51,6 +51,7 @@ git clone https://gitlab.com/fantostisch/wireguard-daemon.git
 cd wireguard-daemon
 sh scripts/setup.sh wg0
 make
+sudo _bin/wireguard-daemon --init --storage-file _bin/conf.json
 ```
 
 ### Uninstall

@@ -69,15 +69,15 @@ func TestGetConnections(t *testing.T) {
 	storage := FileStorage{
 		filePath: "/dev/null",
 		Data: Data{
-			Users: map[string]*UserConfig{
+			Users: map[UserID]*UserConfig{
 				peterUsername: &UserConfig{
-					Clients: map[string]*ClientConfig{
-						petersPublicKeyString: &ClientConfig{Name: "Peters config"},
+					Clients: map[PublicKey]*ClientConfig{
+						PublicKey{petersPublicKey}: &ClientConfig{Name: "Peters config"},
 					},
 				},
 				"Arthur": {
-					Clients: map[string]*ClientConfig{
-						arthursPublicKeyString: {Name: "Arthur's config"},
+					Clients: map[PublicKey]*ClientConfig{
+						PublicKey{arthursPublicKey}: {Name: "Arthur's config"},
 					},
 				},
 			},
@@ -90,24 +90,31 @@ func TestGetConnections(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/client_connections", nil)
 	wgAPIRouter.ServeHTTP(respRec, req)
 	testHTTPStatus(t, *respRec, http.StatusOK)
-	var got map[string][]Connection
+
+	type ConnectionString struct {
+		PublicKey  string   `json:"publicKey"`
+		Name       string   `json:"name"`
+		AllowedIPs []string `json:"allowedIPs"`
+	}
+
+	var got map[string][]ConnectionString
 	err := json.NewDecoder(respRec.Body).Decode(&got)
 	if err != nil {
 		t.Errorf("Error decoding json: %s", err)
 	}
 
-	exp := map[string][]Connection{
-		peterUsername: {Connection{
+	exp := map[string][]ConnectionString{
+		peterUsername: {ConnectionString{
 			PublicKey:  petersPublicKeyString,
 			Name:       "Peters config",
 			AllowedIPs: []string{"2.71.82.81/32"},
-		}}, "Arthur": {Connection{
+		}}, "Arthur": {ConnectionString{
 			PublicKey:  arthursPublicKeyString,
 			Name:       "Arthur's config",
 			AllowedIPs: []string{"1.61.6.255/32"},
 		}},
 	}
 	if !cmp.Equal(got, exp) {
-		t.Errorf("Got: %v, Wanted: %v", got, exp)
+		t.Error("Diff: ", cmp.Diff(exp, got))
 	}
 }

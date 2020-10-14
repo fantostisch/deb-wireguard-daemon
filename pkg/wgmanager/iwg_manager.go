@@ -7,11 +7,12 @@ import (
 )
 
 type User struct {
-	PublicKey string
+	PublicKey PublicKey
 	IP        net.IP
 }
 
 type IWGManager interface {
-	ConfigureWG(privateKey string, users []User) error
+	GeneratePrivateKey() (PrivateKey, error)
+	ConfigureWG(privateKey PrivateKey, users []User) error
 	GetConnections() ([]wgtypes.Peer, error)
 }

@@ -28,7 +28,7 @@ func (h API) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	URL := req.URL.EscapedPath()
 	username := req.FormValue("user_id")
 	if username != "" {
-		h.UserHandler.ServeHTTP(w, req, URL, username)
+		h.UserHandler.ServeHTTP(w, req, URL, UserID(username))
 		return
 	}
 	h.ConnectionHandler.ServeHTTP(w, req, URL)

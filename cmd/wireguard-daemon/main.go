@@ -23,8 +23,9 @@ var (
 	//nolint
 	tlsKeyDir     = "."
 	wgPort        = 51820
-	storageFile   = flag.String("data-dir", "./conf.json", "File used for storing data")
-	listenAddress = flag.String("listen-address", ":8080", "Address to listen to")
+	initStorage   = flag.Bool("init", false, "Create config file.")
+	storageFile   = flag.String("storage-file", "./conf.json", "File used for storing data")
+	listenAddress = flag.String("listen-address", ":8080", "Address to listen on")
 	wgInterface   = flag.String("wg-interface", "wg0", "WireGuard network interface name")
 )
 
@@ -39,7 +40,22 @@ func main() {
 		log.Fatal("Error creating WireGuard manager: ", err)
 	}
 
-	storage := api.NewFileStorage(*storageFile)
+	if *initStorage {
+		privateKey, err := wgManager.GeneratePrivateKey()
+		if err != nil {
+			log.Fatal("Error generating private key: ", err)
+		}
+		err = api.NewFileStorage(*storageFile, privateKey, privateKey.PublicKey())
+		if err != nil {
+			log.Fatal("Error creating file for storage: ", err)
+		}
+		return
+	}
+
+	storage, err := api.ReadFile(*storageFile)
+	if err != nil {
+		log.Fatal("Error reading stored data: ", err)
+	}
 	server := api.NewServer(storage, wgManager, *wgInterface)
 
 	// Stop server on CTRL+C

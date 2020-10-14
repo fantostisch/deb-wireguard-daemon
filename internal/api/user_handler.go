@@ -14,15 +14,17 @@ type UserHandler struct {
 }
 
 // Get all configs of a user.
-func (h UserHandler) getConfigs(w http.ResponseWriter, username string) {
-	clients := map[string]*ClientConfig{}
+func (h UserHandler) getConfigs(w http.ResponseWriter, username UserID) {
+	clients := map[PublicKey]*ClientConfig{}
 
 	h.Server.mutex.Lock()
 	defer h.Server.mutex.Unlock()
 
 	userConfig := h.Server.Storage.Data.Users[username]
 	if userConfig != nil {
-		clients = userConfig.Clients
+		for pk, c := range userConfig.Clients {
+			clients[pk] = c
+		}
 	}
 
 	if err := json.NewEncoder(w).Encode(clients); err != nil {
@@ -33,17 +35,17 @@ func (h UserHandler) getConfigs(w http.ResponseWriter, username string) {
 }
 
 type createConfigAndKeyPairResponse struct {
-	ClientPrivateKey string `json:"clientPrivateKey"`
-	IP               net.IP `json:"ip"`
-	ServerPublicKey  string `json:"serverPublicKey"`
+	ClientPrivateKey PrivateKey `json:"clientPrivateKey"`
+	IP               net.IP     `json:"ip"`
+	ServerPublicKey  PublicKey  `json:"serverPublicKey"`
 }
 
 type createConfigResponse struct {
-	IP              net.IP `json:"ip"`
-	ServerPublicKey string `json:"serverPublicKey"`
+	IP              net.IP    `json:"ip"`
+	ServerPublicKey PublicKey `json:"serverPublicKey"`
 }
 
-func (h UserHandler) newConfig(username string, publicKey string, name string) createConfigResponse {
+func (h UserHandler) newConfig(username UserID, publicKey PublicKey, name string) createConfigResponse {
 	h.Server.mutex.Lock()
 	defer h.Server.mutex.Unlock()
 
@@ -72,17 +74,17 @@ func (h UserHandler) reconfigureWGHTTP(w http.ResponseWriter) bool {
 	return true
 }
 
-func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username string, name string) {
-	clientPrivateKey, err := wgtypes.GeneratePrivateKey()
+func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username UserID, name string) {
+	clientPrivateKey, err := h.Server.wgManager.GeneratePrivateKey()
 	if err != nil {
 		message := fmt.Sprintf("Error generating private key: %s", err)
 		http.Error(w, message, http.StatusInternalServerError)
 		return
 	}
 	clientPublicKey := clientPrivateKey.PublicKey()
-	createConfigResponse := h.newConfig(username, clientPublicKey.String(), name)
+	createConfigResponse := h.newConfig(username, clientPublicKey, name)
 	response := createConfigAndKeyPairResponse{
-		ClientPrivateKey: clientPrivateKey.String(),
+		ClientPrivateKey: clientPrivateKey,
 		IP:               createConfigResponse.IP,
 		ServerPublicKey:  createConfigResponse.ServerPublicKey,
 	}
@@ -98,7 +100,7 @@ func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username
 	}
 }
 
-func (h UserHandler) createConfig(w http.ResponseWriter, username string, publicKey string, name string) {
+func (h UserHandler) createConfig(w http.ResponseWriter, username UserID, publicKey PublicKey, name string) {
 	response := h.newConfig(username, publicKey, name)
 
 	if !h.reconfigureWGHTTP(w) {
@@ -113,7 +115,7 @@ func (h UserHandler) createConfig(w http.ResponseWriter, username string, public
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h UserHandler) deleteConfig(w http.ResponseWriter, username string, publicKey string) {
+func (h UserHandler) deleteConfig(w http.ResponseWriter, username UserID, publicKey PublicKey) {
 	h.Server.mutex.Lock()
 	defer h.Server.mutex.Unlock()
 	userConfig := h.Server.Storage.Data.Users[username]
@@ -134,7 +136,7 @@ func (h UserHandler) deleteConfig(w http.ResponseWriter, username string, public
 }
 
 // setDisabled disables or enables a user and returns if the value was changed
-func (h UserHandler) setDisabled(username string, disabled bool) bool {
+func (h UserHandler) setDisabled(username UserID, disabled bool) bool {
 	h.Server.mutex.Lock()
 	defer h.Server.mutex.Unlock()
 	userConfig := h.Server.Storage.GetUserConfig(username)
@@ -145,7 +147,7 @@ func (h UserHandler) setDisabled(username string, disabled bool) bool {
 	return true
 }
 
-func (h UserHandler) setDisabledHTTP(w http.ResponseWriter, username string, disabled bool, conflictMessage string) {
+func (h UserHandler) setDisabledHTTP(w http.ResponseWriter, username UserID, disabled bool, conflictMessage string) {
 	if !h.setDisabled(username, disabled) {
 		http.Error(w, conflictMessage, http.StatusConflict)
 	}
@@ -157,11 +159,11 @@ func (h UserHandler) setDisabledHTTP(w http.ResponseWriter, username string, dis
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h UserHandler) disableUser(w http.ResponseWriter, username string) {
+func (h UserHandler) disableUser(w http.ResponseWriter, username UserID) {
 	h.setDisabledHTTP(w, username, true, fmt.Sprintf("User %s was already disabled.", username))
 }
 
-func (h UserHandler) enableUser(w http.ResponseWriter, username string) {
+func (h UserHandler) enableUser(w http.ResponseWriter, username UserID) {
 	h.setDisabledHTTP(w, username, false, fmt.Sprintf("User %s was already enabled.", username))
 }
 
@@ -184,7 +186,7 @@ func (h UserHandler) getRequiredValue(w http.ResponseWriter, req *http.Request, 
 	return value
 }
 
-func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, url string, username string) {
+func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, url string, username UserID) {
 	firstSegment, _ := ShiftPath(url)
 	switch firstSegment {
 	case "config":
@@ -216,9 +218,9 @@ func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, url str
 				if name == "" {
 					return
 				}
-				h.createConfig(w, username, publicKey.String(), name)
+				h.createConfig(w, username, PublicKey{publicKey}, name)
 			case http.MethodDelete:
-				h.deleteConfig(w, username, publicKey.String())
+				h.deleteConfig(w, username, PublicKey{publicKey})
 			default:
 				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			}

@@ -1,27 +1,29 @@
 {
-  "PrivateKey": "0HCt4B91xDhyn7HUFRkdodHAVt+dqNLehfd5FoM+dUk=",
-  "PublicKey": "32RYRrEIjLnQym6YxbCLajflIhdotBASibAxY7g5IDA=",
-  "Users": {
+  "privateKey": "0HCt4B91xDhyn7HUFRkdodHAVt+dqNLehfd5FoM+dUk=",
+  "publicKey": "32RYRrEIjLnQym6YxbCLajflIhdotBASibAxY7g5IDA=",
+  "clients": {
     "Emma": {
-      "Clients": {
+      "isDisabled": false,
+      "clients": {
         "igAsM9uQta1cZxYmvSz8o//O8gVVwR0oqDGp4Se4J1Q=": {
           "name": "My Tablet",
           "ip": "10.0.0.4",
-          "modified": "2020-10-02T15:05:42+02:00"
+          "modified": "2020-10-02T13:05:42Z"
         }
       }
     },
     "Peter": {
-      "Clients": {
+      "isDisabled": false,
+      "clients": {
         "0vGpC1HIMNmSwAfXU3UNboI+iaC48b4jjS+SSS2s0l0=": {
           "name": "My Phone",
           "ip": "10.0.0.2",
-          "modified": "2020-10-02T15:04:52+02:00"
+          "modified": "2020-10-02T13:04:52Z"
         },
         "bOy9X7oTO/IDRulouAIPO/JimHuBxrF3jsx6XD/hsl4=": {
           "name": "My Laptop",
           "ip": "10.0.0.3",
-          "modified": "2020-10-02T15:05:12+02:00"
+          "modified": "2020-10-02T13:05:12Z"
         }
       }
     }

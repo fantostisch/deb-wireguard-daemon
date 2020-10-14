@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/fantostisch/wireguard-daemon/pkg/wgmanager"
 	"github.com/google/go-cmp/cmp"
@@ -22,7 +23,12 @@ type TestWGManager struct {
 	getConnectionsError    error
 }
 
-func (wgm TestWGManager) ConfigureWG(privateKey string, users []wgmanager.User) error {
+func (wgm TestWGManager) GeneratePrivateKey() (PrivateKey, error) {
+	privateKey, err := wgtypes.GeneratePrivateKey()
+	return PrivateKey{privateKey}, err
+}
+
+func (wgm TestWGManager) ConfigureWG(privateKey PrivateKey, users []wgmanager.User) error {
 	return wgm.configureWG
 }
 
@@ -30,33 +36,49 @@ func (wgm TestWGManager) GetConnections() ([]wgtypes.Peer, error) {
 	return wgm.getConnectionsPeerList, wgm.getConnectionsError
 }
 
-//todo: test written data instead of in memory data
+const petersPublicKey1String = "1+Peters/+/Rand0m//Public+Key/For+H1s/Phonc="
+const petersPublicKey2String = "2+Peters/+/Rand0m//Public+Key/For+H1s/Phonc="
+const petersPublicKey3String = "3+Peters/+/Rand0m//Public+Key/For+H1s/Phonc="
+
+//todo: test public api but not in memory data
 func newServer(server *Server) {
 	var ipAddr, ipNet, _ = net.ParseCIDR("10.0.0.1/8")
+
+	wgManager := TestWGManager{}
+
+	privateKey, _ := wgManager.GeneratePrivateKey()
+	publicKey := privateKey.PublicKey()
+
+	petersPublicKey1, _ := wgtypes.ParseKey(petersPublicKey1String)
+	petersPublicKey2, _ := wgtypes.ParseKey(petersPublicKey2String)
+	petersPublicKey3, _ := wgtypes.ParseKey(petersPublicKey3String)
 
 	*server = Server{
 		IPAddr:        ipAddr,
 		clientIPRange: ipNet,
-		wgManager:     TestWGManager{},
+		wgManager:     wgManager,
 		Storage: &FileStorage{
 			filePath: "/dev/null",
 			Data: Data{
-				PrivateKey: "server_private_key",
-				PublicKey:  "server_public_key",
-				Users: map[string]*UserConfig{
+				PrivateKey: privateKey,
+				PublicKey:  publicKey,
+				Users: map[UserID]*UserConfig{
 					peterUsername: &UserConfig{
-						Clients: map[string]*ClientConfig{
-							"public/key1=": &ClientConfig{
-								Name: "Client config 1",
-								IP:   net.IPv4(10, 0, 0, 1),
+						Clients: map[PublicKey]*ClientConfig{
+							PublicKey{petersPublicKey1}: &ClientConfig{
+								Name:     "Client config 1",
+								IP:       net.IPv4(10, 0, 0, 1),
+								Modified: TimeJ{time.Date(2020, 10, 13, 17, 52, 14, 4, time.UTC)},
 							},
-							"Peters/Very+Rand0m/Public+Key/For+H1s/Phonc=": &ClientConfig{
-								Name: "Client config 2",
-								IP:   net.IPv4(10, 0, 0, 2),
+							PublicKey{petersPublicKey2}: &ClientConfig{
+								Name:     "Client config 2",
+								IP:       net.IPv4(10, 0, 0, 2),
+								Modified: TimeJ{time.Date(2020, 10, 13, 17, 53, 14, 4, time.UTC)},
 							},
-							"public+key3=": &ClientConfig{
-								Name: "Client config 3",
-								IP:   net.IPv4(10, 0, 0, 3),
+							PublicKey{petersPublicKey3}: &ClientConfig{
+								Name:     "Client config 3",
+								IP:       net.IPv4(10, 0, 0, 3),
+								Modified: TimeJ{time.Date(2020, 10, 13, 17, 54, 14, 4, time.UTC)},
 							},
 						},
 					},
@@ -87,6 +109,12 @@ func testHTTPStatus(t *testing.T, w httptest.ResponseRecorder, exp int) {
 	}
 }
 
+type ClientConfigStrings struct {
+	Name     string `json:"name"`
+	IP       string `json:"ip"`
+	Modified string `json:"modified"`
+}
+
 func TestGetConfigs(t *testing.T) {
 	setup()
 	respRec := httptest.NewRecorder()
@@ -96,14 +124,32 @@ func TestGetConfigs(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/config?"+parameters.Encode(), nil)
 	apiRouter.ServeHTTP(respRec, req)
 	testHTTPStatus(t, *respRec, http.StatusOK)
-	got := map[string]*ClientConfig{}
+	got := map[string]*ClientConfigStrings{}
 	err := json.NewDecoder(respRec.Body).Decode(&got)
 	if err != nil {
 		t.Errorf("Error decoding json: %s", err)
 	}
-	exp := server.Storage.Data.Users[peterUsername].Clients
+
+	exp := map[string]*ClientConfigStrings{
+		petersPublicKey1String: {
+			Name:     "Client config 1",
+			IP:       "10.0.0.1",
+			Modified: "2020-10-13T17:52:14Z",
+		},
+		petersPublicKey2String: {
+			Name:     "Client config 2",
+			IP:       "10.0.0.2",
+			Modified: "2020-10-13T17:53:14Z",
+		},
+		petersPublicKey3String: {
+			Name:     "Client config 3",
+			IP:       "10.0.0.3",
+			Modified: "2020-10-13T17:54:14Z",
+		},
+	}
+
 	if !reflect.DeepEqual(got, exp) {
-		t.Errorf("Got: %v, Wanted: %v", got, exp)
+		t.Error("Diff: ", cmp.Diff(exp, got))
 	}
 }
 
@@ -157,10 +203,10 @@ func TestEmptyUsername(t *testing.T) {
 func testCreateConfig(t *testing.T, username string) {
 	expName := "+/ My Little Phone 16 +/"
 
-	publicKey := "RuvRcz3zuwz/3xMqqh2ZvL+NT3W2v6J60rMnHtRiOE8="
+	publicKeyString := "RuvRcz3zuwz/3xMqqh2ZvL+NT3W2v6J60rMnHtRiOE8="
 	parameters := url.Values{
 		"user_id":    {username},
-		"public_key": {publicKey},
+		"public_key": {publicKeyString},
 	}
 	requestBody := url.Values{
 		"name": {expName},
@@ -189,7 +235,7 @@ func testCreateConfig(t *testing.T, username string) {
 
 		exp := response{
 			IP:              expIPString,
-			ServerPublicKey: server.Storage.Data.PublicKey,
+			ServerPublicKey: server.Storage.Data.PublicKey.String(),
 		}
 
 		if got != exp {
@@ -198,7 +244,8 @@ func testCreateConfig(t *testing.T, username string) {
 	}
 
 	{
-		got := *server.Storage.Data.Users[username].Clients[publicKey]
+		publicKey, _ := wgtypes.ParseKey(publicKeyString)
+		got := *server.Storage.Data.Users[UserID(username)].Clients[PublicKey{publicKey}]
 
 		exp := ClientConfig{
 			Name:     expName,
@@ -263,7 +310,7 @@ func testCreateConfigGenerateKeyPair(t *testing.T, username string) wgtypes.Key 
 		exp := response{
 			ClientPrivateKey: got.ClientPrivateKey, //todo: test
 			IP:               expIPString,
-			ServerPublicKey:  server.Storage.Data.PublicKey,
+			ServerPublicKey:  server.Storage.Data.PublicKey.String(),
 		}
 
 		if got != exp {
@@ -283,7 +330,7 @@ func testCreateConfigGenerateKeyPair(t *testing.T, username string) wgtypes.Key 
 
 		publicKey = key.PublicKey()
 
-		got := *server.Storage.Data.Users[username].Clients[publicKey.String()]
+		got := *server.Storage.Data.Users[UserID(username)].Clients[PublicKey{publicKey}]
 
 		exp := ClientConfig{
 			Name:     expName,
@@ -303,10 +350,10 @@ func TestCreateConfigGenerateKeyPair(t *testing.T) {
 	testCreateConfigGenerateKeyPair(t, peterUsername)
 }
 
-func testDeleteConfig(t *testing.T, username string, publicKey string) {
+func testDeleteConfig(t *testing.T, username string, publicKeyString string) {
 	parameters := url.Values{
 		"user_id":    {username},
-		"public_key": {publicKey},
+		"public_key": {publicKeyString},
 	}
 	req, _ := http.NewRequest(http.MethodDelete, "/config?"+parameters.Encode(), nil)
 
@@ -315,7 +362,8 @@ func testDeleteConfig(t *testing.T, username string, publicKey string) {
 
 	testHTTPStatus(t, *respRec, http.StatusOK)
 
-	config, exists := server.Storage.Data.Users[username].Clients[publicKey]
+	publicKey, _ := wgtypes.ParseKey(publicKeyString)
+	config, exists := server.Storage.Data.Users[UserID(username)].Clients[PublicKey{publicKey}]
 	if exists {
 		t.Error("Config exists")
 	}
@@ -326,7 +374,9 @@ func testDeleteConfig(t *testing.T, username string, publicKey string) {
 
 func TestDeleteConfig(t *testing.T) {
 	setup()
-	testDeleteConfig(t, peterUsername, "Peters/Very+Rand0m/Public+Key/For+H1s/Phone=")
+	testDeleteConfig(t, peterUsername, petersPublicKey2String)
+	testDeleteConfig(t, peterUsername, petersPublicKey1String)
+	testDeleteConfig(t, peterUsername, petersPublicKey3String)
 }
 
 func testDisableUser(t *testing.T, username string, expCode int) {
@@ -340,7 +390,7 @@ func testDisableUser(t *testing.T, username string, expCode int) {
 
 	testHTTPStatus(t, *respRec, expCode)
 
-	disabled := server.Storage.Data.Users[username].IsDisabled
+	disabled := server.Storage.Data.Users[UserID(username)].IsDisabled
 	if !disabled {
 		t.Error("User not disabled.")
 	}
@@ -357,7 +407,7 @@ func testEnableUser(t *testing.T, username string, expCode int) {
 
 	testHTTPStatus(t, *respRec, expCode)
 
-	disabled := server.Storage.Data.Users[username].IsDisabled
+	disabled := server.Storage.Data.Users[UserID(username)].IsDisabled
 	if disabled {
 		t.Error("User disabled.")
 	}
