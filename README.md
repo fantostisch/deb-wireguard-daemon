@@ -13,7 +13,7 @@ This project is used by the
 | GET    | /config?user_id=foo                |             | List all configs of the user. Return empty list if no configs found.                                         |
 | POST   | /config?user_id=foo                | name=Phone  | Create client config. Let the server create a public private key pair.                                       |
 | POST   | /config?user_id=foo&public_key=ABC | name=Laptop | Create client config. Creating 2 client configs with the same public key will overwrite the existing config. |
-| DELETE | /config?user_id=foo&public_key=ABC |             | Delete client config. 404 if config not found.                                                               |
+| DELETE | /config?user_id=foo&public_key=ABC |             | Delete client config. 409 if config not found.                                                               |
 | GET    | /client_connections                |             | Get clients that successfully send or received a packet in the last 3 minutes.                               |
 | POST   | /disable_user?user_id=foo          |             | Disable user. 409 if user is already disabled.                                                               |
 | POST   | /enable_user?user_id=foo           |             | Enable user. 409 if user is already enabled.                                                                 |

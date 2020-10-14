@@ -129,8 +129,9 @@ func (h UserHandler) deleteConfig(w http.ResponseWriter, username UserID, public
 	deleted := h.Server.Storage.DeleteConfig(username, publicKey)
 
 	if !deleted {
-		message := fmt.Sprintf("Config with public key '%s' not found for user '%s", publicKey, username)
-		http.Error(w, message, http.StatusNotFound)
+		message := fmt.Sprintf(
+			"Config not found: User '%s' does not have a config with public key '%s'", username, publicKey.String())
+		http.Error(w, message, http.StatusConflict)
 		return
 	}
 
