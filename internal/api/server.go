@@ -1,91 +1,80 @@
 package api
 
 import (
+	"errors"
 	"io/ioutil"
 	"log"
 	"net"
-	"path"
-	"sync"
 
 	"github.com/fantostisch/wireguard-daemon/pkg/wgmanager"
 )
 
 type Server struct {
-	wgInterface    string
-	serverConfPath string
-	mutex          sync.RWMutex
-	Storage        *FileStorage
-	IPAddr         net.IP
-	clientIPRange  *net.IPNet
-	wgManager      wgmanager.IWGManager
+	wgInterface   string
+	Storage       *FileStorage
+	IPAddr        net.IP
+	clientIPRange *net.IPNet
+	wgManager     wgmanager.IWGManager
 }
 
 func NewServer(storage *FileStorage, wgManager wgmanager.IWGManager, wgInterface string) *Server {
-	ipAddr, ipNet, err := net.ParseCIDR("10.0.0.1/8")
+	IPAddr, ipNet, err := net.ParseCIDR("10.0.0.1/8")
 	if err != nil {
-		log.Fatal("Error with IPS:", err)
+		log.Fatal("Error with IPs:", err)
 	}
-	log.Printf("IP Address: %s IP Network: %s", ipAddr, ipNet)
-
-	configPath := path.Join(storage.filePath, "conf.json")
-	log.Print(configPath)
 
 	surf := Server{
-		wgInterface:    wgInterface,
-		serverConfPath: configPath,
-		mutex:          sync.RWMutex{},
-		Storage:        storage,
-		IPAddr:         ipAddr,
-		clientIPRange:  ipNet,
-		wgManager:      wgManager,
+		wgInterface:   wgInterface,
+		Storage:       storage,
+		IPAddr:        IPAddr,
+		clientIPRange: ipNet,
+		wgManager:     wgManager,
 	}
 	return &surf
 }
 
-func (serv *Server) Start() error {
+func (s *Server) Start() error {
 	log.Print("Enabling IP Forward....")
-	err := serv.enableIPForwarding()
+	err := s.enableIPForwarding()
 	if err != nil {
-		log.Print("Couldn't enable IP Forwarding: ", err)
 		return err
 	}
-	err = serv.configureWG()
+	err = s.configureWG()
 	if err != nil {
-		log.Print("Couldn't configure interface: ", err)
 		return err
 	}
 
-	err = ExecScript("start.sh", serv.wgInterface)
+	err = ExecScript("start.sh", s.wgInterface)
 
 	return err
 }
 
-func (serv *Server) allocateIP() net.IP {
-	allocated := make(map[string]bool)
-	allocated[serv.IPAddr.String()] = true
+func (s *Server) allocateIP() (net.IP, error) {
+	allocatedIPs := s.Storage.GetAllocatedIPs()
+	allocatedIPs = append(allocatedIPs, s.IPAddr)
 
-	for _, cfg := range serv.Storage.Data.Users {
-		for _, dev := range cfg.Clients {
-			allocated[dev.IP.String()] = true
-		}
-	}
-
-	for ip := serv.IPAddr.Mask(serv.clientIPRange.Mask); serv.clientIPRange.Contains(ip); {
+	for ip := s.IPAddr.Mask(s.clientIPRange.Mask); s.clientIPRange.Contains(ip); {
 		for i := len(ip) - 1; i >= 0; i-- {
 			ip[i]++
 			if ip[i] > 0 {
 				break
 			}
 		}
-		if !allocated[ip.String()] {
-			return ip
+		allocated := false
+		for _, allocatedIP := range allocatedIPs {
+			if allocatedIP.Equal(ip) {
+				allocated = true
+				break
+			}
+		}
+		if !allocated {
+			return ip, nil
 		}
 	}
-	log.Fatal("Unable to allocate IP Address, range exhausted")
-	return nil
+	return nil, errors.New("unable to allocate IP Address, range exhausted")
 }
 
-func (serv *Server) enableIPForwarding() error {
+func (s *Server) enableIPForwarding() error {
 	p := "/proc/sys/net/ipv4/ip_forward"
 
 	content, err := ioutil.ReadFile(p)
@@ -100,13 +89,8 @@ func (serv *Server) enableIPForwarding() error {
 	return nil
 }
 
-func (serv *Server) configureWG() error {
-	var enabledUsers []UserConfig
-	for _, user := range serv.Storage.Data.Users {
-		if !user.IsDisabled {
-			enabledUsers = append(enabledUsers, *user)
-		}
-	}
+func (s *Server) configureWG() error {
+	enabledUsers := s.Storage.GetEnabledUsers()
 
 	var users []wgmanager.User
 	for _, user := range enabledUsers {
@@ -118,16 +102,16 @@ func (serv *Server) configureWG() error {
 		}
 	}
 
-	return serv.wgManager.ConfigureWG(serv.Storage.Data.PrivateKey, users)
+	return s.wgManager.ConfigureWG(s.Storage.GetServerPrivateKey(), users)
 }
 
-func (serv *Server) reconfigureWG() error {
-	err := serv.Storage.Write()
+func (s *Server) reconfigureWG() error {
+	err := s.Storage.Write()
 	if err != nil {
 		log.Fatal("Error writing configuration file: ", err)
 		return err
 	}
-	err = serv.configureWG()
+	err = s.configureWG()
 	if err != nil {
 		log.Printf("Error configuring file: %s", err)
 		return err
@@ -135,7 +119,7 @@ func (serv *Server) reconfigureWG() error {
 	return nil
 }
 
-func (serv *Server) Stop() error {
-	err := ExecScript("stop.sh", serv.wgInterface)
+func (s *Server) Stop() error {
+	err := ExecScript("stop.sh", s.wgInterface)
 	return err
 }

@@ -68,15 +68,15 @@ func TestGetConnections(t *testing.T) {
 
 	storage := FileStorage{
 		filePath: "/dev/null",
-		Data: Data{
-			Users: map[UserID]*UserConfig{
-				peterUsername: &UserConfig{
-					Clients: map[PublicKey]*ClientConfig{
-						PublicKey{petersPublicKey}: &ClientConfig{Name: "Peters config"},
+		data: data{
+			Users: map[UserID]*User{
+				peterUsername: &User{
+					Clients: map[PublicKey]ClientConfig{
+						PublicKey{petersPublicKey}: ClientConfig{Name: "Peters config"},
 					},
 				},
 				"Arthur": {
-					Clients: map[PublicKey]*ClientConfig{
+					Clients: map[PublicKey]ClientConfig{
 						PublicKey{arthursPublicKey}: {Name: "Arthur's config"},
 					},
 				},

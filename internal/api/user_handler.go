@@ -15,16 +15,11 @@ type UserHandler struct {
 
 // Get all configs of a user.
 func (h UserHandler) getConfigs(w http.ResponseWriter, username UserID) {
-	clients := map[PublicKey]*ClientConfig{}
+	clients := map[PublicKey]ClientConfig{}
 
-	h.Server.mutex.Lock()
-	defer h.Server.mutex.Unlock()
-
-	userConfig := h.Server.Storage.Data.Users[username]
-	if userConfig != nil {
-		for pk, c := range userConfig.Clients {
-			clients[pk] = c
-		}
+	userConfig, available := h.Server.Storage.GetUserConfig(username)
+	if available {
+		clients = userConfig.Clients
 	}
 
 	if err := json.NewEncoder(w).Encode(clients); err != nil {
@@ -45,21 +40,25 @@ type createConfigResponse struct {
 	ServerPublicKey PublicKey `json:"serverPublicKey"`
 }
 
-func (h UserHandler) newConfig(username UserID, publicKey PublicKey, name string) createConfigResponse {
-	h.Server.mutex.Lock()
-	defer h.Server.mutex.Unlock()
+func (h UserHandler) newConfig(username UserID, publicKey PublicKey, name string) (createConfigResponse, error) {
+	var config ClientConfig
 
-	userConfig := h.Server.Storage.GetUserConfig(username)
-
-	ip := h.Server.allocateIP()
-	config := NewClientConfig(name, ip)
-
-	userConfig.Clients[publicKey] = &config
+	for {
+		ip, err := h.Server.allocateIP()
+		if ip == nil || err != nil {
+			return createConfigResponse{}, fmt.Errorf("error getting IP Address: %w", err)
+		}
+		config = NewClientConfig(name, ip)
+		success := h.Server.Storage.UpdateOrCreateConfig(username, publicKey, config)
+		if success {
+			break
+		}
+	}
 
 	return createConfigResponse{
 		IP:              config.IP,
-		ServerPublicKey: h.Server.Storage.Data.PublicKey,
-	}
+		ServerPublicKey: h.Server.Storage.GetServerPublicKey(),
+	}, nil
 }
 
 // reconfigureWGHTTP reconfigures WireGuard. If there is an error it responds
@@ -82,7 +81,13 @@ func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username
 		return
 	}
 	clientPublicKey := clientPrivateKey.PublicKey()
-	createConfigResponse := h.newConfig(username, clientPublicKey, name)
+	createConfigResponse, err := h.newConfig(username, clientPublicKey, name)
+	if err != nil {
+		message := fmt.Sprintf("Error creating config: %s", err)
+		http.Error(w, message, http.StatusInternalServerError)
+		return
+	}
+
 	response := createConfigAndKeyPairResponse{
 		ClientPrivateKey: clientPrivateKey,
 		IP:               createConfigResponse.IP,
@@ -101,7 +106,12 @@ func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username
 }
 
 func (h UserHandler) createConfig(w http.ResponseWriter, username UserID, publicKey PublicKey, name string) {
-	response := h.newConfig(username, publicKey, name)
+	response, err := h.newConfig(username, publicKey, name)
+	if err != nil {
+		message := fmt.Sprintf("Error creating config: %s", err)
+		http.Error(w, message, http.StatusInternalServerError)
+		return
+	}
 
 	if !h.reconfigureWGHTTP(w) {
 		return
@@ -116,17 +126,13 @@ func (h UserHandler) createConfig(w http.ResponseWriter, username UserID, public
 }
 
 func (h UserHandler) deleteConfig(w http.ResponseWriter, username UserID, publicKey PublicKey) {
-	h.Server.mutex.Lock()
-	defer h.Server.mutex.Unlock()
-	userConfig := h.Server.Storage.Data.Users[username]
+	deleted := h.Server.Storage.DeleteConfig(username, publicKey)
 
-	if userConfig == nil || userConfig.Clients[publicKey] == nil {
+	if !deleted {
 		message := fmt.Sprintf("Config with public key '%s' not found for user '%s", publicKey, username)
 		http.Error(w, message, http.StatusNotFound)
 		return
 	}
-
-	delete(userConfig.Clients, publicKey)
 
 	if !h.reconfigureWGHTTP(w) {
 		return
@@ -135,20 +141,8 @@ func (h UserHandler) deleteConfig(w http.ResponseWriter, username UserID, public
 	w.WriteHeader(http.StatusOK)
 }
 
-// setDisabled disables or enables a user and returns if the value was changed
-func (h UserHandler) setDisabled(username UserID, disabled bool) bool {
-	h.Server.mutex.Lock()
-	defer h.Server.mutex.Unlock()
-	userConfig := h.Server.Storage.GetUserConfig(username)
-	if userConfig.IsDisabled == disabled {
-		return false
-	}
-	userConfig.IsDisabled = disabled
-	return true
-}
-
 func (h UserHandler) setDisabledHTTP(w http.ResponseWriter, username UserID, disabled bool, conflictMessage string) {
-	if !h.setDisabled(username, disabled) {
+	if !h.Server.Storage.SetDisabled(username, disabled) {
 		http.Error(w, conflictMessage, http.StatusConflict)
 	}
 
@@ -159,6 +153,7 @@ func (h UserHandler) setDisabledHTTP(w http.ResponseWriter, username UserID, dis
 	w.WriteHeader(http.StatusOK)
 }
 
+//todo: disabling a user does not free its ip addresses, a malicious user can claim all ip addresses
 func (h UserHandler) disableUser(w http.ResponseWriter, username UserID) {
 	h.setDisabledHTTP(w, username, true, fmt.Sprintf("User %s was already disabled.", username))
 }

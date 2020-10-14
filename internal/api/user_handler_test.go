@@ -59,23 +59,23 @@ func newServer(server *Server) {
 		wgManager:     wgManager,
 		Storage: &FileStorage{
 			filePath: "/dev/null",
-			Data: Data{
+			data: data{
 				PrivateKey: privateKey,
 				PublicKey:  publicKey,
-				Users: map[UserID]*UserConfig{
-					peterUsername: &UserConfig{
-						Clients: map[PublicKey]*ClientConfig{
-							PublicKey{petersPublicKey1}: &ClientConfig{
+				Users: map[UserID]*User{
+					peterUsername: &User{
+						Clients: map[PublicKey]ClientConfig{
+							PublicKey{petersPublicKey1}: ClientConfig{
 								Name:     "Client config 1",
 								IP:       net.IPv4(10, 0, 0, 1),
 								Modified: TimeJ{time.Date(2020, 10, 13, 17, 52, 14, 4, time.UTC)},
 							},
-							PublicKey{petersPublicKey2}: &ClientConfig{
+							PublicKey{petersPublicKey2}: ClientConfig{
 								Name:     "Client config 2",
 								IP:       net.IPv4(10, 0, 0, 2),
 								Modified: TimeJ{time.Date(2020, 10, 13, 17, 53, 14, 4, time.UTC)},
 							},
-							PublicKey{petersPublicKey3}: &ClientConfig{
+							PublicKey{petersPublicKey3}: ClientConfig{
 								Name:     "Client config 3",
 								IP:       net.IPv4(10, 0, 0, 3),
 								Modified: TimeJ{time.Date(2020, 10, 13, 17, 54, 14, 4, time.UTC)},
@@ -235,7 +235,7 @@ func testCreateConfig(t *testing.T, username string) {
 
 		exp := response{
 			IP:              expIPString,
-			ServerPublicKey: server.Storage.Data.PublicKey.String(),
+			ServerPublicKey: server.Storage.data.PublicKey.String(),
 		}
 
 		if got != exp {
@@ -245,7 +245,7 @@ func testCreateConfig(t *testing.T, username string) {
 
 	{
 		publicKey, _ := wgtypes.ParseKey(publicKeyString)
-		got := *server.Storage.Data.Users[UserID(username)].Clients[PublicKey{publicKey}]
+		got := server.Storage.data.Users[UserID(username)].Clients[PublicKey{publicKey}]
 
 		exp := ClientConfig{
 			Name:     expName,
@@ -310,7 +310,7 @@ func testCreateConfigGenerateKeyPair(t *testing.T, username string) wgtypes.Key 
 		exp := response{
 			ClientPrivateKey: got.ClientPrivateKey, //todo: test
 			IP:               expIPString,
-			ServerPublicKey:  server.Storage.Data.PublicKey.String(),
+			ServerPublicKey:  server.Storage.data.PublicKey.String(),
 		}
 
 		if got != exp {
@@ -330,7 +330,7 @@ func testCreateConfigGenerateKeyPair(t *testing.T, username string) wgtypes.Key 
 
 		publicKey = key.PublicKey()
 
-		got := *server.Storage.Data.Users[UserID(username)].Clients[PublicKey{publicKey}]
+		got := server.Storage.data.Users[UserID(username)].Clients[PublicKey{publicKey}]
 
 		exp := ClientConfig{
 			Name:     expName,
@@ -363,12 +363,9 @@ func testDeleteConfig(t *testing.T, username string, publicKeyString string) {
 	testHTTPStatus(t, *respRec, http.StatusOK)
 
 	publicKey, _ := wgtypes.ParseKey(publicKeyString)
-	config, exists := server.Storage.Data.Users[UserID(username)].Clients[PublicKey{publicKey}]
+	_, exists := server.Storage.data.Users[UserID(username)].Clients[PublicKey{publicKey}]
 	if exists {
 		t.Error("Config exists")
-	}
-	if config != nil {
-		t.Error(config, "not nil")
 	}
 }
 
@@ -390,7 +387,7 @@ func testDisableUser(t *testing.T, username string, expCode int) {
 
 	testHTTPStatus(t, *respRec, expCode)
 
-	disabled := server.Storage.Data.Users[UserID(username)].IsDisabled
+	disabled := server.Storage.data.Users[UserID(username)].IsDisabled
 	if !disabled {
 		t.Error("User not disabled.")
 	}
@@ -407,7 +404,7 @@ func testEnableUser(t *testing.T, username string, expCode int) {
 
 	testHTTPStatus(t, *respRec, expCode)
 
-	disabled := server.Storage.Data.Users[UserID(username)].IsDisabled
+	disabled := server.Storage.data.Users[UserID(username)].IsDisabled
 	if disabled {
 		t.Error("User disabled.")
 	}
