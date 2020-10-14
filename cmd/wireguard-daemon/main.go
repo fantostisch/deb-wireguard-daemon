@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/fantostisch/wireguard-daemon/pkg/wgmanager"
+	"github.com/fantostisch/wireguard-daemon/wgmanager"
 
 	"github.com/fantostisch/wireguard-daemon/internal/api"
 )

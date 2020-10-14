@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fantostisch/wireguard-daemon/pkg/wgmanager"
+	"github.com/fantostisch/wireguard-daemon/wgmanager"
 	"github.com/google/go-cmp/cmp"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )

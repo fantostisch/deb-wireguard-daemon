@@ -6,7 +6,7 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/fantostisch/wireguard-daemon/pkg/wgmanager"
+	"github.com/fantostisch/wireguard-daemon/wgmanager"
 
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )

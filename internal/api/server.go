@@ -6,7 +6,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/fantostisch/wireguard-daemon/pkg/wgmanager"
+	"github.com/fantostisch/wireguard-daemon/wgmanager"
 )
 
 type Server struct {

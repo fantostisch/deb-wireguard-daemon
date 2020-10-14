@@ -4,7 +4,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/fantostisch/wireguard-daemon/pkg/wgmanager"
+	"github.com/fantostisch/wireguard-daemon/wgmanager"
 )
 
 type PublicKey = wgmanager.PublicKey
