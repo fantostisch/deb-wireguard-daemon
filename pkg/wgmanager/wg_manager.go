@@ -31,23 +31,23 @@ func (wgm WGManager) GeneratePrivateKey() (PrivateKey, error) {
 	return PrivateKey{privateKey}, err
 }
 
-func (wgm WGManager) ConfigureWG(privateKey PrivateKey, users []User) error {
-	peers := []wgtypes.PeerConfig{}
+func (wgm WGManager) ConfigureWG(privateKey PrivateKey, peers []Peer) error {
+	wgPeers := []wgtypes.PeerConfig{}
 
-	for _, user := range users {
-		peer := wgtypes.PeerConfig{
-			PublicKey:         user.PublicKey.Key,
+	for _, peer := range peers {
+		wgPeer := wgtypes.PeerConfig{
+			PublicKey:         peer.PublicKey.Key,
 			ReplaceAllowedIPs: true,
-			AllowedIPs:        user.AllowedIPs,
+			AllowedIPs:        peer.AllowedIPs,
 		}
-		peers = append(peers, peer)
+		wgPeers = append(wgPeers, wgPeer)
 	}
 
 	cfg := wgtypes.Config{
 		PrivateKey:   &privateKey.Key,
 		ListenPort:   &wgm.WGPort,
 		ReplacePeers: true,
-		Peers:        peers,
+		Peers:        wgPeers,
 	}
 	err := wgm.client.ConfigureDevice(wgm.WGInterface, cfg)
 	if err != nil {

@@ -28,7 +28,7 @@ func (wgm TestWGManager) GeneratePrivateKey() (PrivateKey, error) {
 	return PrivateKey{privateKey}, err
 }
 
-func (wgm TestWGManager) ConfigureWG(privateKey PrivateKey, users []wgmanager.User) error {
+func (wgm TestWGManager) ConfigureWG(privateKey PrivateKey, peers []wgmanager.Peer) error {
 	return wgm.configureWG
 }
 
