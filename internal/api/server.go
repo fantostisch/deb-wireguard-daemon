@@ -2,7 +2,6 @@ package api
 
 import (
 	"errors"
-	"io/ioutil"
 	"log"
 	"net"
 
@@ -34,12 +33,7 @@ func NewServer(storage *FileStorage, wgManager wgmanager.IWGManager, wgInterface
 }
 
 func (s *Server) Start() error {
-	log.Print("Enabling IP Forward....")
-	err := s.enableIPForwarding()
-	if err != nil {
-		return err
-	}
-	err = s.configureWG()
+	err := s.configureWG()
 	if err != nil {
 		return err
 	}
@@ -72,21 +66,6 @@ func (s *Server) allocateIP() (net.IP, error) {
 		}
 	}
 	return nil, errors.New("unable to allocate IP Address, range exhausted")
-}
-
-func (s *Server) enableIPForwarding() error {
-	p := "/proc/sys/net/ipv4/ip_forward"
-
-	content, err := ioutil.ReadFile(p)
-	if err != nil {
-		return err
-	}
-
-	if string(content) == "0\n" {
-		return ioutil.WriteFile(p, []byte("1"), 0600)
-	}
-
-	return nil
 }
 
 func (s *Server) configureWG() error {

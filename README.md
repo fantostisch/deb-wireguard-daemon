@@ -50,6 +50,7 @@ sudo apt-get install -y iproute2
 git clone https://gitlab.com/fantostisch/wireguard-daemon.git
 cd wireguard-daemon
 sh scripts/setup.sh wg0
+sh scripts/deploy.sh
 make
 sudo _bin/wireguard-daemon --init --storage-file _bin/conf.json
 ```
