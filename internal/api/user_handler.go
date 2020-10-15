@@ -97,10 +97,6 @@ func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username
 		ServerPublicKey:  createConfigResponse.ServerPublicKey,
 	}
 
-	if !h.reconfigureWGHTTP(w) {
-		return
-	}
-
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		message := fmt.Sprintf("Error encoding response as JSON: %s", err)
 		http.Error(w, message, http.StatusInternalServerError)
