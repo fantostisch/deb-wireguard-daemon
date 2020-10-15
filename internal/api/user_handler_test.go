@@ -36,6 +36,10 @@ func (wgm TestWGManager) AddPeers(peers []wgmanager.Peer) error {
 	return wgm.configureWG
 }
 
+func (wgm TestWGManager) RemovePeers(keys []PublicKey) error {
+	return wgm.configureWG
+}
+
 func (wgm TestWGManager) GetConnections() ([]wgtypes.Peer, error) {
 	return wgm.getConnectionsPeerList, wgm.getConnectionsError
 }

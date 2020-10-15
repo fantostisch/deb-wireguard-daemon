@@ -80,6 +80,27 @@ func (wgm WGManager) AddPeers(peers []Peer) error {
 	return nil
 }
 
+func (wgm WGManager) RemovePeers(publicKeys []PublicKey) error {
+	wgPeers := []wgtypes.PeerConfig{}
+
+	for _, publicKey := range publicKeys {
+		wgPeers = append(wgPeers, wgtypes.PeerConfig{
+			PublicKey: publicKey.Key,
+			Remove:    true,
+		})
+	}
+
+	cfg := wgtypes.Config{
+		ReplacePeers: false,
+		Peers:        wgPeers,
+	}
+	err := wgm.client.ConfigureDevice(wgm.WGInterface, cfg)
+	if err != nil {
+		return fmt.Errorf("error removing peers from WireGuard: %w", err)
+	}
+	return nil
+}
+
 // GetConnections lists a config as connected when a handshake has been
 // performed with the client in the last 3 minutes. If a WireGuard client
 // did not perform a handshake in the last 3 minutes, all packets will be

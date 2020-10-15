@@ -51,7 +51,7 @@ func (h UserHandler) newConfig(username UserID, publicKey PublicKey, name string
 			return createConfigResponse{}, fmt.Errorf("error saving config: %w", err)
 		}
 		if err := h.Server.wgManager.AddPeers([]wgmanager.Peer{ClientToWGPeer(publicKey, config)}); err != nil {
-			return createConfigResponse{}, fmt.Errorf("error config peer to WireGuard: %w", err)
+			return createConfigResponse{}, fmt.Errorf("error adding peer to WireGuard: %w", err)
 		}
 		if success {
 			break
@@ -62,18 +62,6 @@ func (h UserHandler) newConfig(username UserID, publicKey PublicKey, name string
 		IP:              config.IP,
 		ServerPublicKey: h.Server.Storage.GetServerPublicKey(),
 	}, nil
-}
-
-// reconfigureWGHTTP reconfigures WireGuard. If there is an error it responds
-// a InternalServerError and returns false. If it succeeds no response is
-// written and true is returned.
-func (h UserHandler) reconfigureWGHTTP(w http.ResponseWriter) bool {
-	if err := h.Server.configureWG(); err != nil {
-		message := fmt.Sprintf("Error reconfiguring WireGuard: %s", err)
-		http.Error(w, message, http.StatusInternalServerError)
-		return false
-	}
-	return true
 }
 
 func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username UserID, name string) {
@@ -135,7 +123,9 @@ func (h UserHandler) deleteConfig(w http.ResponseWriter, username UserID, public
 		return
 	}
 
-	if !h.reconfigureWGHTTP(w) {
+	if err := h.Server.wgManager.RemovePeers([]PublicKey{publicKey}); err != nil {
+		message := fmt.Sprintf("Error removing peer from WireGuard: %s", err)
+		http.Error(w, message, http.StatusInternalServerError)
 		return
 	}
 
@@ -154,14 +144,17 @@ func (h UserHandler) setDisabledHTTP(w http.ResponseWriter, username UserID, dis
 	}
 
 	clients := h.Server.Storage.GetUserClients(username)
-	var wgPeers []wgmanager.Peer
-	for publicKey, config := range clients {
-		wgPeers = append(wgPeers, ClientToWGPeer(publicKey, config))
-	}
-
 	if disabled {
-		err = h.Server.configureWG()
+		var publicKeys []PublicKey
+		for publicKey := range clients {
+			publicKeys = append(publicKeys, publicKey)
+		}
+		err = h.Server.wgManager.RemovePeers(publicKeys)
 	} else {
+		var wgPeers []wgmanager.Peer
+		for publicKey, config := range clients {
+			wgPeers = append(wgPeers, ClientToWGPeer(publicKey, config))
+		}
 		err = h.Server.wgManager.AddPeers(wgPeers)
 	}
 	if err != nil {
