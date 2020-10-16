@@ -49,15 +49,18 @@ wg version # Test if WireGuard is successfully installed.
 sudo apt-get install -y iproute2
 git clone https://gitlab.com/fantostisch/wireguard-daemon.git
 cd wireguard-daemon
-sh scripts/setup.sh wg0
-sh scripts/deploy.sh
 make
-sudo _bin/wireguard-daemon --init --storage-file _bin/conf.json
+(cd deploy && sudo bash ./deploy.sh)
 ```
 
-### Uninstall
+### Disable WireGuard
 ```sh
-sh scripts/uninstall.sh wg0
+sudo ip link set down wg0
+```
+
+### Enable WireGuard
+```sh
+sudo ip link set up wg0
 ```
 
 ### Set up NAT
@@ -86,7 +89,7 @@ To generate a public and public-private key pair run:
 
 ##### Manually adding a user
 
-To manually add a user modify conf.json. For an example take a look at [conf.example.json](configs/conf.example.json).
+To manually add a user modify storage.json. For an example take a look at [storage.example.json](docs/storage.example.json).
 
 #### Manually creating a config
 

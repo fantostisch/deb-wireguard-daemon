@@ -7,12 +7,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
-	"os/signal"
 	"path/filepath"
-	"syscall"
 
 	"github.com/fantostisch/wireguard-daemon/wgmanager"
+	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 
 	"github.com/fantostisch/wireguard-daemon/internal/api"
 )
@@ -21,11 +19,13 @@ var (
 	//nolint
 	tlsCertDir = "."
 	//nolint
-	tlsKeyDir     = "."
-	wgPort        = 51820
-	initStorage   = flag.Bool("init", false, "Create config file.")
-	storageFile   = flag.String("storage-file", "./conf.json", "File used for storing data")
-	listenAddress = flag.String("listen-address", ":8080", "Address to listen on")
+	tlsKeyDir = "."
+
+	initStorage     = flag.Bool("init", false, "Create config file.")
+	storageFile     = flag.String("storage-file", "./storage.json", "File used for storing data")
+	publicKeyString = flag.String("publicKey", "", "Public key of the server used when creating the config")
+
+	listenAddress = flag.String("listen-address", "0.0.0.0:8080", "API listen address")
 	wgInterface   = flag.String("wg-interface", "wg0", "WireGuard network interface name")
 )
 
@@ -35,17 +35,21 @@ func main() {
 	}
 	flag.Parse()
 
-	wgManager, err := wgmanager.New(*wgInterface, wgPort)
+	wgManager, err := wgmanager.New(*wgInterface)
 	if err != nil {
 		log.Fatal("Error creating WireGuard manager: ", err)
 	}
 
 	if *initStorage {
-		privateKey, err := wgManager.GeneratePrivateKey()
-		if err != nil {
-			log.Fatal("Error generating private key: ", err)
+		if *publicKeyString == "" {
+			log.Fatal("Please provide a public key using the --publicKey option")
 		}
-		err = api.NewFileStorage(*storageFile, privateKey, privateKey.PublicKey())
+		wgPublicKey, err := wgtypes.ParseKey(*publicKeyString)
+		if err != nil {
+			log.Fatal("Error parsing public key: ", err)
+		}
+
+		err = api.NewFileStorage(*storageFile, api.PublicKey{wgPublicKey})
 		if err != nil {
 			log.Fatal("Error creating file for storage: ", err)
 		}
@@ -59,27 +63,9 @@ func main() {
 	}
 	server := api.NewServer(storage, wgManager, *wgInterface)
 
-	// Stop server on CTRL+C
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		for range c {
-			stopErr := server.Stop()
-			if stopErr != nil {
-				fmt.Println("Error stopping server: ", stopErr)
-			}
-			os.Exit(0)
-		}
-	}()
-
-	startErr := server.Start()
+	startErr := server.Start(*listenAddress)
 	if startErr != nil {
 		fmt.Println("Error starting server: ", startErr)
-		return
-	}
-	startAPIErr := server.StartAPI(*listenAddress)
-	if startAPIErr != nil {
-		fmt.Println("Error starting API: ", startAPIErr)
 		return
 	}
 }

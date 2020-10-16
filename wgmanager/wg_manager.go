@@ -9,18 +9,16 @@ import (
 )
 
 type WGManager struct {
-	WGPort      int
 	WGInterface string
 	client      *wgctrl.Client
 }
 
-func New(wgInterface string, wgPort int) (*WGManager, error) {
+func New(wgInterface string) (*WGManager, error) {
 	wgClient, err := wgctrl.New()
 	if err != nil {
 		return nil, err
 	}
 	return &WGManager{
-		WGPort:      wgPort,
 		WGInterface: wgInterface,
 		client:      wgClient,
 	}, nil
@@ -31,7 +29,7 @@ func (wgm WGManager) GeneratePrivateKey() (PrivateKey, error) {
 	return PrivateKey{privateKey}, err
 }
 
-func (wgm WGManager) ConfigureWG(privateKey PrivateKey, peers []Peer) error {
+func (wgm WGManager) ConfigureWG(peers []Peer) error {
 	wgPeers := []wgtypes.PeerConfig{}
 
 	for _, peer := range peers {
@@ -44,8 +42,6 @@ func (wgm WGManager) ConfigureWG(privateKey PrivateKey, peers []Peer) error {
 	}
 
 	cfg := wgtypes.Config{
-		PrivateKey:   &privateKey.Key,
-		ListenPort:   &wgm.WGPort,
 		ReplacePeers: true,
 		Peers:        wgPeers,
 	}

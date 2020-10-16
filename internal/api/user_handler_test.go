@@ -28,7 +28,7 @@ func (wgm TestWGManager) GeneratePrivateKey() (PrivateKey, error) {
 	return PrivateKey{privateKey}, err
 }
 
-func (wgm TestWGManager) ConfigureWG(privateKey PrivateKey, peers []wgmanager.Peer) error {
+func (wgm TestWGManager) ConfigureWG(peers []wgmanager.Peer) error {
 	return wgm.configureWG
 }
 
@@ -68,8 +68,7 @@ func newServer(server *Server) {
 		Storage: &FileStorage{
 			filePath: "/dev/null",
 			data: data{
-				PrivateKey: privateKey,
-				PublicKey:  publicKey,
+				PublicKey: publicKey,
 				Users: map[UserID]*User{
 					peterUsername: &User{
 						Clients: map[PublicKey]ClientConfig{

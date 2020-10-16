@@ -1,0 +1,7 @@
+[NetDev]
+Name=wg0
+Kind=wireguard
+Description=EduVPN WireGuard
+
+[WireGuard]
+ListenPort=51820

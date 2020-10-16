@@ -33,11 +33,3 @@ func (h API) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	h.ConnectionHandler.ServeHTTP(w, req, URL)
 }
-
-func (s *Server) StartAPI(listenAddress string) error {
-	var router http.Handler = API{
-		UserHandler:       UserHandler{Server: s},
-		ConnectionHandler: ConnectionHandler{wgManager: s.wgManager, storage: s.Storage},
-	}
-	return http.ListenAndServe(listenAddress, router)
-}

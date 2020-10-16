@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"net"
+	"net/http"
 
 	"github.com/fantostisch/wireguard-daemon/wgmanager"
 )
@@ -32,15 +33,17 @@ func NewServer(storage *FileStorage, wgManager wgmanager.IWGManager, wgInterface
 	return &surf
 }
 
-func (s *Server) Start() error {
+func (s *Server) Start(listenAddress string) error {
 	err := s.configureWG()
 	if err != nil {
 		return err
 	}
 
-	err = ExecScript("start.sh", s.wgInterface)
-
-	return err
+	var router http.Handler = API{
+		UserHandler:       UserHandler{Server: s},
+		ConnectionHandler: ConnectionHandler{wgManager: s.wgManager, storage: s.Storage},
+	}
+	return http.ListenAndServe(listenAddress, router)
 }
 
 func (s *Server) allocateIP() (net.IP, error) {
@@ -78,10 +81,5 @@ func (s *Server) configureWG() error {
 		}
 	}
 
-	return s.wgManager.ConfigureWG(s.Storage.GetServerPrivateKey(), wgPeers)
-}
-
-func (s *Server) Stop() error {
-	err := ExecScript("stop.sh", s.wgInterface)
-	return err
+	return s.wgManager.ConfigureWG(wgPeers)
 }
