@@ -41,16 +41,11 @@ Then execute:
 When using Debian Buster, Wireguard and Go need to be installed from backports, which needs to be enabled. [Instructions for enabling backports on Debian](https://backports.debian.org/Instructions/).
 
 ```sh
-sudo apt-get -y install linux-headers-$(dpkg --print-architecture)
-sudo apt-get -y -t buster-backports install golang-1.14-go #or: sudo apt-get -y install golang-1.14-go
-go version # Test if go is successfully installed.
-sudo apt-get -y -t buster-backports install wireguard #or: sudo apt-get install wireguard
-wg version # Test if WireGuard is successfully installed.
-sudo apt-get install -y iproute2
-git clone https://gitlab.com/fantostisch/wireguard-daemon.git
+git clone https://github.com/fantostisch/wireguard-daemon.git
 cd wireguard-daemon
 make
 (cd deploy && sudo bash ./deploy.sh)
+make run
 ```
 
 ### Disable WireGuard
