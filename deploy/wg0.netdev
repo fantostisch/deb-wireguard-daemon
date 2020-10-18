@@ -4,4 +4,3 @@ Kind=wireguard
 Description=EduVPN WireGuard
 
 [WireGuard]
-ListenPort=51820

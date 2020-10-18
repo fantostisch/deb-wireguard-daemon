@@ -44,7 +44,7 @@ When using Debian Buster, Wireguard and Go need to be installed from backports, 
 git clone https://github.com/fantostisch/wireguard-daemon.git
 cd wireguard-daemon
 make
-(cd deploy && sudo bash ./deploy.sh)
+(cd deploy && sudo bash ./deploy.sh 51820)
 make run
 ```
 

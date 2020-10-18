@@ -26,8 +26,14 @@ chown root:systemd-network "$netdev_file"
 chmod 0640 "$netdev_file"
 
 set +x
-echo "PrivateKey=$private_key" >>"$netdev_file"
+echo "PrivateKey=$private_key" >> "$netdev_file"
 set -x
+
+listen_port=$1
+if [ -z "$listen_port" ]; then
+  listen_port=51820
+fi
+echo "ListenPort=$listen_port" >> "$netdev_file"
 
 cp ./wg0.network /etc/systemd/network/90-wg0.network
 
