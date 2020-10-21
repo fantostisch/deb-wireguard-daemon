@@ -7,8 +7,6 @@ import (
 	"net/http"
 
 	"github.com/fantostisch/wireguard-daemon/wgmanager"
-
-	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
 type UserHandler struct {
@@ -173,87 +171,4 @@ func (h UserHandler) disableUser(w http.ResponseWriter, username UserID) {
 
 func (h UserHandler) enableUser(w http.ResponseWriter, username UserID) {
 	h.setDisabledHTTP(w, username, false, fmt.Sprintf("User %s was already enabled.", username))
-}
-
-// getRequiredValue gets a value from the HTTP parameters. If the value is not available an error response will be
-// written and an empty string will be returned.
-// Assumption: req.Form was was populated by calling req.ParseForm()
-func (h UserHandler) getRequiredValue(w http.ResponseWriter, req *http.Request, key string) string {
-	value := req.Form.Get(key)
-	if value == "" {
-		contentType := req.Header.Get("Content-Type")
-		const form = "application/x-www-form-urlencoded"
-		if contentType != form {
-			message := fmt.Sprintf("Content-Type '%s' was not equal to %s'", contentType, form)
-			http.Error(w, message, http.StatusUnsupportedMediaType)
-			return ""
-		}
-		http.Error(w, "%s was not supplied.", http.StatusBadRequest)
-		return ""
-	}
-	return value
-}
-
-func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, url string, username UserID) {
-	firstSegment, _ := ShiftPath(url)
-	switch firstSegment {
-	case "config":
-		receivedPublicKey := req.Form.Get("public_key")
-		if receivedPublicKey == "" {
-			switch req.Method {
-			case http.MethodGet:
-				h.getConfigs(w, username)
-			case http.MethodPost:
-				name := h.getRequiredValue(w, req, "name")
-				if name == "" {
-					return
-				}
-				h.createConfigGenerateKeyPair(w, username, name)
-			default:
-				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-				return
-			}
-		} else {
-			publicKey, err := wgtypes.ParseKey(receivedPublicKey)
-			if err != nil {
-				message := fmt.Sprintf("Invalid public key: '%s'. %s", receivedPublicKey, err)
-				http.Error(w, message, http.StatusBadRequest)
-				return
-			}
-			switch req.Method {
-			case http.MethodPost:
-				name := h.getRequiredValue(w, req, "name")
-				if name == "" {
-					return
-				}
-				h.createConfig(w, username, PublicKey{publicKey}, name)
-			default:
-				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			}
-		}
-	case "delete_config":
-		switch req.Method {
-		case http.MethodPost:
-			receivedPublicKey := req.Form.Get("public_key")
-			if receivedPublicKey == "" {
-				http.Error(w, "No public key provided", http.StatusBadRequest)
-				return
-			}
-			publicKey, err := wgtypes.ParseKey(receivedPublicKey)
-			if err != nil {
-				message := fmt.Sprintf("Invalid public key: '%s'. %s", receivedPublicKey, err)
-				http.Error(w, message, http.StatusBadRequest)
-				return
-			}
-			h.deleteConfig(w, username, PublicKey{publicKey})
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	case "disable_user":
-		h.disableUser(w, username)
-	case "enable_user":
-		h.enableUser(w, username)
-	default:
-		http.NotFound(w, req)
-	}
 }

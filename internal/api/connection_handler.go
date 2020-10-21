@@ -59,14 +59,3 @@ func (h ConnectionHandler) getConnections(w http.ResponseWriter) {
 		return
 	}
 }
-
-func (h ConnectionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, url string) {
-	firstSegment, _ := ShiftPath(url)
-	switch firstSegment {
-	case "client_connections":
-		h.getConnections(w)
-		return
-	default:
-		http.NotFound(w, req)
-	}
-}
