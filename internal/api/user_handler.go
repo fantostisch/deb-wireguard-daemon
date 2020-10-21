@@ -227,11 +227,27 @@ func (h UserHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, url str
 					return
 				}
 				h.createConfig(w, username, PublicKey{publicKey}, name)
-			case http.MethodDelete:
-				h.deleteConfig(w, username, PublicKey{publicKey})
 			default:
 				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			}
+		}
+	case "delete_config":
+		switch req.Method {
+		case http.MethodPost:
+			receivedPublicKey := req.Form.Get("public_key")
+			if receivedPublicKey == "" {
+				http.Error(w, "No public key provided", http.StatusBadRequest)
+				return
+			}
+			publicKey, err := wgtypes.ParseKey(receivedPublicKey)
+			if err != nil {
+				message := fmt.Sprintf("Invalid public key: '%s'. %s", receivedPublicKey, err)
+				http.Error(w, message, http.StatusBadRequest)
+				return
+			}
+			h.deleteConfig(w, username, PublicKey{publicKey})
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	case "disable_user":
 		h.disableUser(w, username)

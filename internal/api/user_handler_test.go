@@ -362,7 +362,7 @@ func testDeleteConfig(t *testing.T, username string, publicKeyString string) {
 		"user_id":    {username},
 		"public_key": {publicKeyString},
 	}
-	req, _ := http.NewRequest(http.MethodDelete, "/config?"+parameters.Encode(), nil)
+	req, _ := http.NewRequest(http.MethodPost, "/delete_config?"+parameters.Encode(), nil)
 
 	respRec := httptest.NewRecorder()
 	apiRouter.ServeHTTP(respRec, req)
