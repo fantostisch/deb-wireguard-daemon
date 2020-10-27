@@ -116,6 +116,22 @@ func testHTTPStatus(t *testing.T, w httptest.ResponseRecorder, exp int) {
 	}
 }
 
+func testError(t *testing.T, w httptest.ResponseRecorder, errorType string) {
+	switch errorType {
+	case "":
+		testHTTPStatus(t, w, http.StatusOK)
+	case "internal_server_error":
+		testHTTPStatus(t, w, http.StatusInternalServerError)
+	default:
+		testHTTPStatus(t, w, http.StatusBadRequest)
+		got := Error{}
+		err := json.NewDecoder(w.Body).Decode(&got)
+		if err != nil {
+			t.Errorf("Error decoding JSON: %s", err)
+		}
+	}
+}
+
 type ClientConfigStrings struct {
 	Name     string `json:"name"`
 	IP       string `json:"ip"`
@@ -383,7 +399,7 @@ func TestDeleteConfig(t *testing.T) {
 	testDeleteConfig(t, peterUsername, petersPublicKey3String)
 }
 
-func testDisableUser(t *testing.T, username string, expCode int) {
+func testDisableUser(t *testing.T, username string, errorType string) {
 	parameters := url.Values{
 		"user_id": {username},
 	}
@@ -393,7 +409,7 @@ func testDisableUser(t *testing.T, username string, expCode int) {
 	respRec := httptest.NewRecorder()
 	apiRouter.ServeHTTP(respRec, req)
 
-	testHTTPStatus(t, *respRec, expCode)
+	testError(t, *respRec, errorType)
 
 	disabled := server.Storage.data.Users[UserID(username)].IsDisabled
 	if !disabled {
@@ -401,7 +417,7 @@ func testDisableUser(t *testing.T, username string, expCode int) {
 	}
 }
 
-func testEnableUser(t *testing.T, username string, expCode int) {
+func testEnableUser(t *testing.T, username string, errorType string) {
 	parameters := url.Values{
 		"user_id": {username},
 	}
@@ -411,7 +427,7 @@ func testEnableUser(t *testing.T, username string, expCode int) {
 	respRec := httptest.NewRecorder()
 	apiRouter.ServeHTTP(respRec, req)
 
-	testHTTPStatus(t, *respRec, expCode)
+	testError(t, *respRec, errorType)
 
 	disabled := server.Storage.data.Users[UserID(username)].IsDisabled
 	if disabled {
@@ -424,25 +440,25 @@ func TestDisablingAndEnablingUser(t *testing.T) {
 	var tests = []struct {
 		testName     string
 		username     string
-		expCode      int
-		testFunction func(t *testing.T, username string, expCode int)
+		errorType    string
+		testFunction func(t *testing.T, username string, erroType string)
 	}{
-		{"Disable new user", "Emma", http.StatusOK, testDisableUser},
-		{"Disable existing user Peter", peterUsername, http.StatusOK, testDisableUser},
-		{"Enable Emma", "Emma", http.StatusOK, testEnableUser},
-		{"Enable Peter", peterUsername, http.StatusOK, testEnableUser},
+		{"Disable new user", "Emma", "", testDisableUser},
+		{"Disable existing user Peter", peterUsername, "", testDisableUser},
+		{"Enable Emma", "Emma", "", testEnableUser},
+		{"Enable Peter", peterUsername, "", testEnableUser},
 
-		{"Enable new user", "Pierre", http.StatusConflict, testEnableUser},
-		{"Disable Pierre", "Pierre", http.StatusOK, testDisableUser},
-		{"Enable Pierre", "Pierre", http.StatusOK, testEnableUser},
-		{"Enable Pierre when he is already enabled", "Pierre", http.StatusConflict, testEnableUser},
+		{"Enable new user", "Pierre", UserAlreadyEnabled, testEnableUser},
+		{"Disable Pierre", "Pierre", "", testDisableUser},
+		{"Enable Pierre", "Pierre", "", testEnableUser},
+		{"Enable Pierre when he is already enabled", "Pierre", UserAlreadyEnabled, testEnableUser},
 
-		{"Disable Pierre", "Pierre", http.StatusOK, testDisableUser},
-		{"Disable Pierre when he is already disabled", "Pierre", http.StatusConflict, testDisableUser},
-		{"Enable Pierre", "Pierre", http.StatusOK, testEnableUser},
+		{"Disable Pierre", "Pierre", "", testDisableUser},
+		{"Disable Pierre when he is already disabled", "Pierre", UserAlreadyDisabled, testDisableUser},
+		{"Enable Pierre", "Pierre", "", testEnableUser},
 	}
 	for _, tt := range tests {
-		t.Run(tt.testName, func(t *testing.T) { tt.testFunction(t, tt.username, tt.expCode) })
+		t.Run(tt.testName, func(t *testing.T) { tt.testFunction(t, tt.username, tt.errorType) })
 	}
 }
 
@@ -452,6 +468,6 @@ func TestWireGuardReconfigureError(t *testing.T) {
 		configureWG: errors.New("oops"),
 	}
 
-	testDisableUser(t, peterUsername, http.StatusInternalServerError)
-	testEnableUser(t, peterUsername, http.StatusInternalServerError)
+	testDisableUser(t, peterUsername, "internal_server_error")
+	testEnableUser(t, peterUsername, "internal_server_error")
 }

@@ -117,7 +117,7 @@ func (h UserHandler) deleteConfig(w http.ResponseWriter, username UserID, public
 	if !deleted {
 		message := fmt.Sprintf(
 			"Config not found: User '%s' does not have a config with public key '%s'", username, publicKey.String())
-		http.Error(w, message, http.StatusConflict)
+		replyWithError(w, ConfigNotFound, message)
 		return
 	}
 
@@ -130,7 +130,9 @@ func (h UserHandler) deleteConfig(w http.ResponseWriter, username UserID, public
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h UserHandler) setDisabledHTTP(w http.ResponseWriter, username UserID, disabled bool, conflictMessage string) {
+func (h UserHandler) setDisabledHTTP(w http.ResponseWriter, username UserID, disabled bool,
+	errorType string, conflictMessage string) {
+
 	valueChanged, err := h.Server.Storage.SetDisabled(username, disabled)
 	if err != nil {
 		message := fmt.Sprintf("Error enabling/disabling user: %s", err)
@@ -138,7 +140,8 @@ func (h UserHandler) setDisabledHTTP(w http.ResponseWriter, username UserID, dis
 		return
 	}
 	if !valueChanged {
-		http.Error(w, conflictMessage, http.StatusConflict)
+		replyWithError(w, errorType, conflictMessage)
+		return
 	}
 
 	clients := h.Server.Storage.GetUserClients(username)
@@ -166,9 +169,9 @@ func (h UserHandler) setDisabledHTTP(w http.ResponseWriter, username UserID, dis
 
 //todo: disabling a user does not free its ip addresses, a malicious user can claim all ip addresses
 func (h UserHandler) disableUser(w http.ResponseWriter, username UserID) {
-	h.setDisabledHTTP(w, username, true, fmt.Sprintf("User %s was already disabled.", username))
+	h.setDisabledHTTP(w, username, true, UserAlreadyDisabled, fmt.Sprintf("User %s was already disabled.", username))
 }
 
 func (h UserHandler) enableUser(w http.ResponseWriter, username UserID) {
-	h.setDisabledHTTP(w, username, false, fmt.Sprintf("User %s was already enabled.", username))
+	h.setDisabledHTTP(w, username, false, UserAlreadyEnabled, fmt.Sprintf("User %s was already enabled.", username))
 }

@@ -34,8 +34,8 @@ func getRequiredPOSTValue(w http.ResponseWriter, req *http.Request, key string) 
 		if !checkContentType(w, req) {
 			return ""
 		}
-		message := fmt.Sprintf("'%s'  was not supplied.", key)
-		http.Error(w, message, http.StatusBadRequest)
+		message := fmt.Sprintf("'%s' was not supplied.", key)
+		replyWithError(w, MissingPostParameter, message)
 		return ""
 	}
 	return value
@@ -47,7 +47,7 @@ func getUserID(w http.ResponseWriter, req *http.Request) (UserID, bool) {
 		if !checkContentType(w, req) {
 			return "", false
 		}
-		http.Error(w, "user_id was not supplied.", http.StatusBadRequest)
+		replyWithError(w, UserIDNotSupplied, "user_id was not supplied.")
 		return "", false
 	}
 	return UserID(username), true
@@ -61,7 +61,7 @@ func getPublicKey(w http.ResponseWriter, req *http.Request) (PublicKey, bool) {
 	publicKey, err := wgtypes.ParseKey(receivedPublicKey)
 	if err != nil {
 		message := fmt.Sprintf("Invalid public key: '%s'. %s", receivedPublicKey, err)
-		http.Error(w, message, http.StatusBadRequest)
+		replyWithError(w, InvalidPublicKey, message)
 		return PublicKey{}, false
 	}
 	return PublicKey{publicKey}, true

@@ -41,6 +41,8 @@ linters-settings:
   lll:
     line-length: 120
     tab-width: 4
+  whitespace:
+    multi-func: true
 
 issues:
   exclude:

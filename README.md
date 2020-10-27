@@ -13,10 +13,10 @@ This project is used by the
 | GET    | /configs?user_id=foo        |                                        | List all configs of the user. Return empty list if no configs found.                                         |
 | POST   | /create_config              | user_id=foo&public_key=ABC&name=Laptop | Create client config. Creating 2 client configs with the same public key will overwrite the existing config. |
 | POST   | /create_config_and_key_pair | user_id=foo&name=Phone                 | Create client config. Let the server create a public private key pair.                                       |
-| POST   | /delete_config              | user_id=foo&public_key=ABC             | Delete client config. 409 if config not found.                                                               |
+| POST   | /delete_config              | user_id=foo&public_key=ABC             | Delete client config. Responds config_not_found  error if config not found.                                  |
 | GET    | /client_connections         |                                        | Get clients that successfully send or received a packet in the last 3 minutes.                               |
-| POST   | /disable_user               | user_id=foo                            | Disable user. 409 if user is already disabled.                                                               |
-| POST   | /enable_user                | user_id=foo                            | Enable user. 409 if user is already enabled.                                                                 |
+| POST   | /disable_user               | user_id=foo                            | Disable user. Responds user_already_disabled error if user is already disabled.                              |
+| POST   | /enable_user                | user_id=foo                            | Enable user. Responds user_already_enabled error if user is already enabled.                                 |
 
 todo: document return values including errors
 
