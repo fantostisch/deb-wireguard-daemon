@@ -6,7 +6,7 @@ echo ""
 
 set -ex
 
-rm -f "/etc/systemd/network/90-wg0.network"
-rm -f "/etc/systemd/network/90-wg0.netdev"
-systemctl restart systemd-networkd
-rm -f ../_bin/storage.json
+sudo rm -f "/etc/systemd/network/90-wg0.network"
+sudo rm -f "/etc/systemd/network/90-wg0.netdev"
+sudo systemctl restart systemd-networkd
+sudo rm -f ../_bin/storage.json

@@ -55,8 +55,15 @@ Then execute:
 git clone https://github.com/fantostisch/wireguard-daemon.git
 cd wireguard-daemon
 make
-(cd deploy && sudo bash ./deploy.sh 51820)
+(cd deploy && bash ./deploy.sh 51820)
 make run
+```
+
+### Uninstall
+
+```
+# Warning: removes all data, including all configurations.
+(cd deploy && bash ./purge.sh)
 ```
 
 #### Set up NAT

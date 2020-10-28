@@ -21,7 +21,8 @@ check: $(SOURCES)
 	echo "Success"
 
 run: $(APP)
-	cd _bin && sudo ./wireguard-daemon
+	sudo setcap cap_net_admin+ep $(APP)
+	cd _bin && ./wireguard-daemon
 
 test: $(SOURCES)
 	go test ./internal/api
