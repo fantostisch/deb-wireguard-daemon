@@ -25,7 +25,7 @@ var (
 	storageFile     = flag.String("storage-file", "./storage.json", "File used for storing data")
 	publicKeyString = flag.String("publicKey", "", "Public key of the server used when creating the config")
 
-	listen      = flag.String("listen", "0.0.0.0:8080", "API listen address")
+	listen      = flag.String("listen", "127.0.0.1:8080", "API listen address")
 	wgInterface = flag.String("wg-interface", "wg0", "WireGuard network interface name")
 )
 
