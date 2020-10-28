@@ -25,8 +25,8 @@ var (
 	storageFile     = flag.String("storage-file", "./storage.json", "File used for storing data")
 	publicKeyString = flag.String("publicKey", "", "Public key of the server used when creating the config")
 
-	listenAddress = flag.String("listen-address", "0.0.0.0:8080", "API listen address")
-	wgInterface   = flag.String("wg-interface", "wg0", "WireGuard network interface name")
+	listen      = flag.String("listen", "0.0.0.0:8080", "API listen address")
+	wgInterface = flag.String("wg-interface", "wg0", "WireGuard network interface name")
 )
 
 func main() {
@@ -63,7 +63,7 @@ func main() {
 	}
 	server := api.NewServer(storage, wgManager, *wgInterface)
 
-	startErr := server.Start(*listenAddress)
+	startErr := server.Start(*listen)
 	if startErr != nil {
 		fmt.Println("Error starting server: ", startErr)
 		return
