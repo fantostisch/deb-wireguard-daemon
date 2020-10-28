@@ -1,23 +1,30 @@
 #!/bin/bash
 set -ex
 
+###############################################################################
+# SOFTWARE
+###############################################################################
 apt-get update
 apt-get -y install linux-headers-"$(dpkg --print-architecture)"
 sudo apt-get -y install golang-1.14-go
 sudo apt-get install wireguard
 apt-get install -y iproute2
 
+###############################################################################
+# Keys
+###############################################################################
 set +x
-
 private_key=$(wg genkey)
 public_key=$(echo "$private_key" | wg pubkey)
-
 set -x
 
+###############################################################################
+# Storage
+###############################################################################
 ../_bin/wireguard-daemon --init --storage-file ../_bin/storage.json --publicKey "$public_key"
 
 ###############################################################################
-# NETWORK
+# systemd
 ###############################################################################
 netdev_file="/etc/systemd/network/90-wg0.netdev"
 
