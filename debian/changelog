@@ -1,0 +1,5 @@
+wireguard-daemon (0.0~git20201029.0256ad7-1) UNRELEASED; urgency=medium
+
+  * Initial release
+
+ -- Nick Aquina <nickaquina@gmail.com>  Thu, 29 Oct 2020 16:38:49 +0100

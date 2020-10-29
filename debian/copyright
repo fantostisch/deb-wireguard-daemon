@@ -1,0 +1,16 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: wireguard-daemon
+Upstream-Contact: Nick
+Source: https://github.com/fantostisch/wireguard-daemon
+
+Files: *
+Copyright: 2020 Nick
+License: TODO
+
+Files: debian/*
+Copyright: 2020 Nick Aquina <nickaquina@gmail.com>
+License: TODO
+Comment: Debian packaging is licensed under the same terms as upstream
+
+License: TODO
+TODO
