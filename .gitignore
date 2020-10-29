@@ -17,3 +17,5 @@ config
 # vendor/
 
 /_bin/
+
+.pc
