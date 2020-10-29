@@ -9,10 +9,8 @@ import (
 	"log"
 	"path/filepath"
 
-	"github.com/fantostisch/wireguard-daemon/wgmanager"
-	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
-
 	"github.com/fantostisch/wireguard-daemon/internal/api"
+	"github.com/fantostisch/wireguard-daemon/wgmanager"
 )
 
 var (
@@ -21,9 +19,8 @@ var (
 	//nolint
 	tlsKeyDir = "."
 
-	initStorage     = flag.Bool("init", false, "Create config file.")
-	storageFile     = flag.String("storage-file", "./storage.json", "File used for storing data")
-	publicKeyString = flag.String("publicKey", "", "Public key of the server used when creating the config")
+	initStorage = flag.Bool("init", false, "Create config file.")
+	storageFile = flag.String("storage-file", "./storage.json", "File used for storing data")
 
 	listen      = flag.String("listen", "127.0.0.1:8080", "API listen address")
 	wgInterface = flag.String("wg-interface", "wg0", "WireGuard network interface name")
@@ -41,15 +38,12 @@ func main() {
 	}
 
 	if *initStorage {
-		if *publicKeyString == "" {
-			log.Fatal("Please provide a public key using the --publicKey option")
-		}
-		wgPublicKey, err := wgtypes.ParseKey(*publicKeyString)
+		publicKey, err := wgManager.GetPublicKey()
 		if err != nil {
-			log.Fatal("Error parsing public key: ", err)
+			log.Fatal("Error retrieving public key from WireGuard: ", err)
 		}
 
-		err = api.NewFileStorage(*storageFile, api.PublicKey{wgPublicKey})
+		err = api.NewFileStorage(*storageFile, publicKey)
 		if err != nil {
 			log.Fatal("Error creating file for storage: ", err)
 		}

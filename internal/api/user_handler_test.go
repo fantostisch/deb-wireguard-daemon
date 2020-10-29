@@ -23,6 +23,10 @@ type TestWGManager struct {
 	getConnectionsError    error
 }
 
+func (wgm TestWGManager) GetPublicKey() (PrivateKey, error) {
+	return PrivateKey{}, nil
+}
+
 func (wgm TestWGManager) GeneratePrivateKey() (PrivateKey, error) {
 	privateKey, err := wgtypes.GeneratePrivateKey()
 	return PrivateKey{privateKey}, err
