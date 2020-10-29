@@ -1,0 +1,14 @@
+[Unit]
+Description=Daemon to manage WireGuard
+
+[Service]
+Environment=LISTEN=127.0.0.1:8080
+EnvironmentFile=-/etc/sysconfig/wireguard-daemon
+ExecStart=/usr/bin/wireguard-daemon -listen "${LISTEN}"
+Restart=on-failure
+PrivateDevices=yes
+User=wireguard-daemon
+Group=wireguard-daemon
+
+[Install]
+WantedBy=multi-user.target
