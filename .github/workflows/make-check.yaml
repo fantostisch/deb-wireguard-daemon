@@ -1,31 +1,32 @@
 name: Check
 
-on: [push, pull_request]
+on: [ push, pull_request ]
 
 jobs:
   build:
     name: Check
     runs-on: ubuntu-20.04
     steps:
-
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
 
+    - name: Upgrade to Debian Testing to use latest software.
+      run: |
+        sudo apt-get -y install debian-archive-keyring
+        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 04EE7237B7D453EC
+        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 648ACFD622F3D138
+        sudo rm -rf /etc/apt/sources.list.d/
+        echo "deb http://deb.debian.org/debian/ testing main" | sudo tee /etc/apt/sources.list
+
+    - run: sudo apt-get update
+
+    - run: sudo apt-get install -y golang-go golang-golang-x-tools make
+
     - name: make check
       run: |
-        # Install Go
-        export PATH="$PATH:/usr/lib/go-1.14/bin"
-        export GOPATH=$HOME/go
-        export GOBIN=$GOPATH/bin
-        export PATH=$PATH:$GOBIN
-        sudo apt-get -y install golang-1.14-go
-
-        # Install goimports
-        # golang-golang-x-tools is out of date, so use go get instead of apt
-        go get golang.org/x/tools/cmd/goimports
-
+        unset GOROOT
         # Install Go linter
-        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.31.0
+        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ~/go/bin v1.31.0
+        export PATH=$PATH:~/go/bin
 
         make check
-

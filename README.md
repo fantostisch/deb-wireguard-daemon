@@ -34,23 +34,6 @@ sudo apt install -t buster-backports wireguard golang-1.14-go systemd
 
 ## Installation
 
-### Set-up Go global variables
-
-Add the following lines to `~/.bashrc`:
-
-```sh
-#Go
-export PATH="$PATH:/usr/lib/go-1.14/bin" #todo: use update-alternatives?
-export GOPATH=$HOME/go
-export GOBIN=$GOPATH/bin
-export PATH=$PATH:$GOBIN
-```
-
-Then execute:
-`source ~/.bashrc`
-
-### Installation
-
 ```sh
 git clone https://github.com/fantostisch/wireguard-daemon.git
 cd wireguard-daemon
@@ -59,18 +42,18 @@ make
 make run
 ```
 
-### Uninstall
-
-```
-# Warning: removes all data, including all configurations.
-(cd deploy && bash ./purge.sh)
-```
-
-#### Set up NAT
+### Set up NAT
 
 Execute the following and replace `eth0` with your primary network interface which you can find by executing `sudo ifconfig`.
 ```sh
 sudo iptables -t nat -A POSTROUTING -s 10.0.0.0/8 -o eth0 -j MASQUERADE
+```
+
+## Uninstall
+
+```
+# Warning: removes all data, including all configurations.
+(cd deploy && bash ./purge.sh)
 ```
 
 ## Manage WireGuard
