@@ -7,6 +7,7 @@ Priority: optional
 Build-Depends: debhelper-compat (= 13),
                dh-golang,
                golang-any,
+               golang-zx2c4-wireguard-wgctrl-dev,
                golang-github-google-go-cmp-dev
 Standards-Version: 4.5.0
 Vcs-Browser: https://salsa.debian.org/go-team/packages/wireguard-daemon
@@ -24,6 +25,7 @@ Description: Daemon for managing a Wireguard server using an API.
 
 Package: golang-github-fantostisch-wireguard-daemon-dev
 Architecture: all
-Depends: golang-github-google-go-cmp-dev,
+Depends: golang-zx2c4-wireguard-wgctrl-dev,
+         golang-github-google-go-cmp-dev,
          ${misc:Depends}
 Description: Daemon for managing a Wireguard server using an API. (library)
