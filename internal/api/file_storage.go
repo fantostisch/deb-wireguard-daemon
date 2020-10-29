@@ -18,16 +18,14 @@ type FileStorage struct {
 }
 
 type data struct {
-	PublicKey PublicKey        `json:"publicKey"`
-	Users     map[UserID]*User `json:"users"`
+	Users map[UserID]*User `json:"users"`
 }
 
-func NewFileStorage(filePath string, publicKey PublicKey) error {
+func NewFileStorage(filePath string) error {
 	storage := &FileStorage{
 		filePath: filePath,
 		data: data{
-			PublicKey: publicKey,
-			Users:     map[UserID]*User{},
+			Users: map[UserID]*User{},
 		}}
 	switch _, err := os.Open(filepath.Clean(filePath)); {
 	case err == nil:
@@ -63,10 +61,6 @@ func (s *FileStorage) write() error {
 		return err
 	}
 	return ioutil.WriteFile(s.filePath, data, 0600)
-}
-
-func (s *FileStorage) GetServerPublicKey() PublicKey {
-	return s.data.PublicKey
 }
 
 func (s *FileStorage) GetUserClients(username UserID) map[PublicKey]ClientConfig {

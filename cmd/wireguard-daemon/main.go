@@ -38,12 +38,7 @@ func main() {
 	}
 
 	if *initStorage {
-		publicKey, err := wgManager.GetPublicKey()
-		if err != nil {
-			log.Fatal("Error retrieving public key from WireGuard: ", err)
-		}
-
-		err = api.NewFileStorage(*storageFile, publicKey)
+		err = api.NewFileStorage(*storageFile)
 		if err != nil {
 			log.Fatal("Error creating file for storage: ", err)
 		}
@@ -55,8 +50,10 @@ func main() {
 		log.Fatal("Error reading stored data. "+
 			"If you have not created a config file yet, create one using --init. Error: ", err)
 	}
-	server := api.NewServer(storage, wgManager, *wgInterface)
-
+	server, err := api.NewServer(storage, wgManager, *wgInterface)
+	if server == nil || err != nil {
+		log.Fatal("Error creating server: ", err)
+	}
 	startErr := server.Start(*listen)
 	if startErr != nil {
 		fmt.Println("Error starting server: ", startErr)

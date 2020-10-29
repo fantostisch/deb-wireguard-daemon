@@ -69,10 +69,10 @@ func newServer(server *Server) {
 		IPAddr:        ipAddr,
 		clientIPRange: ipNet,
 		wgManager:     wgManager,
+		wgPublicKey:   publicKey,
 		Storage: &FileStorage{
 			filePath: "/dev/null",
 			data: data{
-				PublicKey: publicKey,
 				Users: map[UserID]*User{
 					peterUsername: &User{
 						Clients: map[PublicKey]ClientConfig{
@@ -263,7 +263,7 @@ func testCreateConfig(t *testing.T, username string) {
 
 		exp := response{
 			IP:              expIPString,
-			ServerPublicKey: server.Storage.data.PublicKey.String(),
+			ServerPublicKey: server.GetPublicKey().String(),
 		}
 
 		if got != exp {
@@ -336,7 +336,7 @@ func testCreateConfigGenerateKeyPair(t *testing.T, username string) wgtypes.Key 
 		exp := response{
 			ClientPrivateKey: got.ClientPrivateKey, //todo: test
 			IP:               expIPString,
-			ServerPublicKey:  server.Storage.data.PublicKey.String(),
+			ServerPublicKey:  server.GetPublicKey().String(),
 		}
 
 		if got != exp {
