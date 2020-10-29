@@ -20,108 +20,10 @@ Architecture: any
 Depends: ${misc:Depends},
          ${shlibs:Depends}
 Built-Using: ${misc:Built-Using}
-Description: Daemon for managing a Wireguard server using an API. (program)
- WireGuard Daemon Daemon for managing a WireGuard server using an API.
- Built for eduVPN (https://eduvpn.org).
- .
- This project is used by the eduVPN portal with WireGuard support
- (https://github.com/fantostisch/vpn-user-portal).  API endpoints
- overview | Method | URL                         | POST
- Data                              | Description
- |
- |--------|-----------------------------|----------------------------------------|--------------------------------------------------------------------------------------------------------------|
- | GET    | /configs?userid=foo        |
- | List all configs of the user. Return empty list if no configs
- found.                                         | | POST   | /createconfig
- | userid=foo&publickey=ABC&name=Laptop | Create client config. Creating
- 2 client configs with the same public key will overwrite the existing
- config. | | POST   | /createconfigandkeypair | userid=foo&name=Phone
- | Create client config. Let the server create a public private key pair.
- | | POST   | /deleteconfig              | userid=foo&publickey=ABC
- | Delete client config. Responds confignotfound  error if
- config not found.                                  | | GET    |
- /clientconnections         |                                        |
- Get clients that successfully send or received a packet in
- the last 3 minutes.                               | | POST   |
- /disableuser               | userid=foo                            |
- Disable user. Responds useralreadydisabled error if user is
- already disabled.                              | | POST   |
- /enableuser                | userid=foo                            |
- Enable user. Responds useralready_enabled error if user is already
- enabled.                                 |
- .
- todo: document return values including errors CompatibilityDebian 10
- (Buster) WireGuard, Go and systemd must be installed from backports,
- which needs to be enabled. Instructions for enabling backports on Debian
- (https://backports.debian.org/Instructions/).  sh sudo apt install -t
- buster-backports wireguard golang-1.14-go systemd
- .
- Completely working• Debian 11 (Bullseye)•
- Debian Unstable (Sid)Installation sh git clone
- https://github.com/fantostisch/wireguard-daemon.git cd wireguard-daemon
- make (cd deploy && bash ./deploy.sh 51820) make run
- .
- Set up NAT Execute the following and replace eth0 with your primary
- network interface which you can find by executing sudo ifconfig.  sh sudo
- iptables -t nat -A POSTROUTING -s 10.0.0.0/8 -o eth0 -j MASQUERADE
- .
- Uninstall ``` Warning: removes all data, including all configurations.
- (cd deploy && bash ./purge.sh) ``` Manage WireGuardDisable WireGuard sh
- sudo ip link set down wg0
- .
- Enable WireGuard sh sudo ip link set up wg0
+Description: Daemon for managing a Wireguard server using an API.
 
 Package: golang-github-fantostisch-wireguard-daemon-dev
 Architecture: all
 Depends: golang-github-google-go-cmp-dev,
          ${misc:Depends}
 Description: Daemon for managing a Wireguard server using an API. (library)
- WireGuard Daemon Daemon for managing a WireGuard server using an API.
- Built for eduVPN (https://eduvpn.org).
- .
- This project is used by the eduVPN portal with WireGuard support
- (https://github.com/fantostisch/vpn-user-portal).  API endpoints
- overview | Method | URL                         | POST
- Data                              | Description
- |
- |--------|-----------------------------|----------------------------------------|--------------------------------------------------------------------------------------------------------------|
- | GET    | /configs?userid=foo        |
- | List all configs of the user. Return empty list if no configs
- found.                                         | | POST   | /createconfig
- | userid=foo&publickey=ABC&name=Laptop | Create client config. Creating
- 2 client configs with the same public key will overwrite the existing
- config. | | POST   | /createconfigandkeypair | userid=foo&name=Phone
- | Create client config. Let the server create a public private key pair.
- | | POST   | /deleteconfig              | userid=foo&publickey=ABC
- | Delete client config. Responds confignotfound  error if
- config not found.                                  | | GET    |
- /clientconnections         |                                        |
- Get clients that successfully send or received a packet in
- the last 3 minutes.                               | | POST   |
- /disableuser               | userid=foo                            |
- Disable user. Responds useralreadydisabled error if user is
- already disabled.                              | | POST   |
- /enableuser                | userid=foo                            |
- Enable user. Responds useralready_enabled error if user is already
- enabled.                                 |
- .
- todo: document return values including errors CompatibilityDebian 10
- (Buster) WireGuard, Go and systemd must be installed from backports,
- which needs to be enabled. Instructions for enabling backports on Debian
- (https://backports.debian.org/Instructions/).  sh sudo apt install -t
- buster-backports wireguard golang-1.14-go systemd
- .
- Completely working• Debian 11 (Bullseye)•
- Debian Unstable (Sid)Installation sh git clone
- https://github.com/fantostisch/wireguard-daemon.git cd wireguard-daemon
- make (cd deploy && bash ./deploy.sh 51820) make run
- .
- Set up NAT Execute the following and replace eth0 with your primary
- network interface which you can find by executing sudo ifconfig.  sh sudo
- iptables -t nat -A POSTROUTING -s 10.0.0.0/8 -o eth0 -j MASQUERADE
- .
- Uninstall ``` Warning: removes all data, including all configurations.
- (cd deploy && bash ./purge.sh) ``` Manage WireGuardDisable WireGuard sh
- sudo ip link set down wg0
- .
- Enable WireGuard sh sudo ip link set up wg0
