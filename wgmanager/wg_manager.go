@@ -24,6 +24,14 @@ func New(wgInterface string) (*WGManager, error) {
 	}, nil
 }
 
+func (wgm WGManager) GetPublicKey() (PublicKey, error) {
+	wgDevice, err := wgm.client.Device(wgm.WGInterface)
+	if wgDevice == nil || err != nil {
+		return PublicKey{}, err
+	}
+	return PublicKey{wgDevice.PublicKey}, nil
+}
+
 func (wgm WGManager) GeneratePrivateKey() (PrivateKey, error) {
 	privateKey, err := wgtypes.GeneratePrivateKey()
 	return PrivateKey{privateKey}, err

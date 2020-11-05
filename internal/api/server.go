@@ -2,7 +2,7 @@ package api
 
 import (
 	"errors"
-	"log"
+	"fmt"
 	"net"
 	"net/http"
 
@@ -15,12 +15,18 @@ type Server struct {
 	IPAddr        net.IP
 	clientIPRange *net.IPNet
 	wgManager     wgmanager.IWGManager
+	wgPublicKey   PublicKey
 }
 
-func NewServer(storage *FileStorage, wgManager wgmanager.IWGManager, wgInterface string) *Server {
+func NewServer(storage *FileStorage, wgManager wgmanager.IWGManager, wgInterface string) (*Server, error) {
 	IPAddr, ipNet, err := net.ParseCIDR("10.0.0.1/8")
 	if err != nil {
-		log.Fatal("Error with IPs:", err)
+		return nil, fmt.Errorf("error parsing CIDR notation: %w", err)
+	}
+
+	wgPublicKey, err := wgManager.GetPublicKey()
+	if err != nil {
+		return nil, fmt.Errorf("error getting public key from WireGuard: %w", err)
 	}
 
 	surf := Server{
@@ -29,8 +35,9 @@ func NewServer(storage *FileStorage, wgManager wgmanager.IWGManager, wgInterface
 		IPAddr:        IPAddr,
 		clientIPRange: ipNet,
 		wgManager:     wgManager,
+		wgPublicKey:   wgPublicKey,
 	}
-	return &surf
+	return &surf, nil
 }
 
 func (s *Server) Start(listenAddress string) error {
@@ -44,6 +51,10 @@ func (s *Server) Start(listenAddress string) error {
 		ConnectionHandler: ConnectionHandler{wgManager: s.wgManager, storage: s.Storage},
 	}
 	return http.ListenAndServe(listenAddress, router)
+}
+
+func (s *Server) GetPublicKey() PublicKey {
+	return s.wgPublicKey
 }
 
 func (s *Server) allocateIP() (net.IP, error) {

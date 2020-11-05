@@ -58,7 +58,7 @@ func (h UserHandler) newConfig(username UserID, publicKey PublicKey, name string
 
 	return createConfigResponse{
 		IP:              config.IP,
-		ServerPublicKey: h.Server.Storage.GetServerPublicKey(),
+		ServerPublicKey: h.Server.GetPublicKey(),
 	}, nil
 }
 

@@ -34,12 +34,20 @@ sudo apt install -t buster-backports wireguard golang-1.14-go systemd
 
 ## Installation
 
+### Development
+
 ```sh
 git clone https://github.com/fantostisch/wireguard-daemon.git
 cd wireguard-daemon
-make
 (cd deploy && bash ./deploy.sh 51820)
+sudo setcap cap_net_admin=ep _bin/wireguard-daemon
+_bin/wireguard-daemon --init --storage-file _bin/storage.json
 make run
+```
+
+### Production
+```sh
+#todo
 ```
 
 ### Set up NAT
