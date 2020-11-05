@@ -8,20 +8,6 @@ sudo apt-get update
 sudo apt-get -y install linux-headers-"$(dpkg --print-architecture)"
 sudo apt-get -y install golang-go
 sudo apt-get install wireguard
-sudo apt-get install -y iproute2
-
-###############################################################################
-# Keys
-###############################################################################
-set +x
-private_key=$(wg genkey)
-public_key=$(echo "$private_key" | wg pubkey)
-set -x
-
-###############################################################################
-# Storage
-###############################################################################
-../_bin/wireguard-daemon --init --storage-file ../_bin/storage.json --publicKey "$public_key"
 
 ###############################################################################
 # systemd
@@ -33,7 +19,7 @@ sudo chown root:systemd-network "$netdev_file"
 sudo chmod 0640 "$netdev_file"
 
 set +x
-echo "PrivateKey=$private_key" | (sudo tee -a "$netdev_file" > /dev/null)
+echo "PrivateKey=$(wg genkey)" | (sudo tee -a "$netdev_file" > /dev/null)
 set -x
 
 listen_port=$1
