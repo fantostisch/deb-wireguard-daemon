@@ -5,7 +5,7 @@ set -ex
 # SOFTWARE
 ###############################################################################
 sudo apt-get update
-sudo apt-get -y install linux-headers-"$(dpkg --print-architecture)"
+sudo apt-get -y install linux-headers-generic
 sudo apt-get -y install golang-go
 sudo apt-get install wireguard
 
