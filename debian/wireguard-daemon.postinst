@@ -1,1 +1,11 @@
 setcap cap_net_admin=ep /usr/bin/wireguard-daemon
+
+DATA_DIR=/var/lib/wireguard-daemon
+adduser --quiet --system --group --home $DATA_DIR --no-create-home wireguard-daemon
+chown wireguard-daemon:wireguard-daemon $DATA_DIR
+chmod 700 $DATA_DIR
+
+STORAGE_FILE="$DATA_DIR/storage.json"
+if [ ! -f "$STORAGE_FILE" ]; then
+  sudo -u wireguard-daemon wireguard-daemon -init -storage-file="$STORAGE_FILE"
+fi

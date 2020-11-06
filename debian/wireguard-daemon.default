@@ -1,3 +1,5 @@
+#STORAGE_FILE="/var/lib/wireguard-daemon/storage.json" (DEFAULT)
+
 #LISTEN=127.0.0.1:8080 # (DEFAULT)
 #LISTEN=[::1]:8080
 #LISTEN=:8080

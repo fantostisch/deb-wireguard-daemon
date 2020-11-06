@@ -2,9 +2,9 @@
 Description=Daemon to manage WireGuard
 
 [Service]
-Environment=LISTEN=127.0.0.1:8080
+Environment=LISTEN=127.0.0.1:8080 STORAGE_FILE="/var/lib/wireguard-daemon/storage.json"
 EnvironmentFile=-/etc/sysconfig/wireguard-daemon
-ExecStart=/usr/bin/wireguard-daemon -listen "${LISTEN}"
+ExecStart=/usr/bin/wireguard-daemon -storage-file "${STORAGE_FILE}" -listen "${LISTEN}"
 Restart=on-failure
 PrivateDevices=yes
 User=wireguard-daemon

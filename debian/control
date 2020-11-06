@@ -19,7 +19,8 @@ XS-Go-Import-Path: github.com/fantostisch/wireguard-daemon
 
 Package: wireguard-daemon
 Architecture: any
-Depends: ${misc:Depends},
+Depends: adduser,
+         ${misc:Depends},
          ${shlibs:Depends}
 Built-Using: ${misc:Built-Using}
 Description: Daemon for managing a Wireguard server using an API.
