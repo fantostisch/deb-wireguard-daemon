@@ -6,7 +6,7 @@ Environment=LISTEN=127.0.0.1:8080 STORAGE_FILE="/var/lib/wireguard-daemon/storag
 EnvironmentFile=-/etc/sysconfig/wireguard-daemon
 ExecStart=/usr/bin/wireguard-daemon -storage-file "${STORAGE_FILE}" -listen "${LISTEN}"
 Restart=on-failure
-PrivateDevices=yes
+PrivateDevices=no
 User=wireguard-daemon
 Group=wireguard-daemon
 
