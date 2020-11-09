@@ -32,22 +32,25 @@ sudo apt install -t buster-backports wireguard golang-1.14-go systemd
 * Debian 11 (Bullseye)
 * Debian Unstable (Sid)
 
-## Installation
+## Development
 
-### Development
+### Installation
 
+If the linux kernel headers are not already installed, a reboot might be necessary.
 ```sh
+sudo apt update
+sudo apt -y install wireguard linux-headers-generic golang-go
+
 git clone https://github.com/fantostisch/wireguard-daemon.git
 cd wireguard-daemon
 (cd deploy && bash ./deploy.sh 51820)
 sudo setcap cap_net_admin=ep _bin/wireguard-daemon
 _bin/wireguard-daemon --init --storage-file _bin/storage.json
-make run
 ```
 
-### Production
+#### Running
 ```sh
-#todo
+make run
 ```
 
 ### Set up NAT
@@ -57,11 +60,46 @@ Execute the following and replace `eth0` with your primary network interface whi
 sudo iptables -t nat -A POSTROUTING -s 10.0.0.0/8 -o eth0 -j MASQUERADE
 ```
 
-## Uninstall
+### Uninstall
 
 ```
 # Warning: removes all data, including all configurations.
 (cd deploy && bash ./purge.sh)
+```
+
+## Deploying eduVPN with WireGuard support
+**Warning**: until version 1.x is released no data migrations will be provided and all data will be lost on update. \
+**Warning**: the eduVPN repository will be replaced with a new repository which is not officially supported by eduVPN.
+
+First [deploy eduVPN on Debian Bullseye](https://github.com/eduvpn/documentation/blob/v2/DEPLOY_DEBIAN.md).
+Then run the following:
+```sh
+# Replace firewall rules
+curl https://raw.githubusercontent.com/fantostisch/documentation/v2/resources/firewall/iptables | sudo tee /etc/iptables/rules.v4 > /dev/null
+
+# Add software repository
+gpg --keyserver pgp.surfnet.nl --recv-keys D5AF93E78144D01912ED0BA6A54D467852A97D0E
+gpg --export D5AF93E78144D01912ED0BA6A54D467852A97D0E | sudo tee /etc/apt/trusted.gpg.d/eduVPN-WireGuard.gpg > /dev/null
+sudo rm /etc/apt/sources.list.d/eduVPN.list
+#todo: https
+echo "deb http://eduvpn-wireguard-debian.nickaquina.nl/repo sid main" | sudo tee /etc/apt/sources.list.d/eduVPN-WireGuard.list
+
+# Replace packages
+sudo apt update
+sudo apt -y install wireguard-daemon wireguard-vpn-user-portal wireguard-vpn-server-api wireguard-vpn-server-node
+
+sudo deploy-wireguard-daemon
+
+sudo systemctl enable --now wireguard-daemon
+sudo systemctl start wireguard-daemon
+
+sudo a2enconf vpn-server-api vpn-user-portal
+sudo systemctl reload apache2
+```
+
+View the daemon log with:
+```sh
+sudo journalctl -f -t wireguard-daemon
 ```
 
 ## Manage WireGuard
