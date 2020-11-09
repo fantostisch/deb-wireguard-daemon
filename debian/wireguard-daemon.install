@@ -1,1 +1,7 @@
+#!/usr/bin/dh-exec
 usr/bin
+
+deploy/wg0.netdev => usr/share/wireguard-daemon/wg0.netdev
+deploy/wg0.network => usr/share/wireguard-daemon/wg0.network
+deploy/deploy.sh => usr/bin/deploy-wireguard-daemon
+deploy/purge.sh => usr/bin/purge-wireguard-daemon

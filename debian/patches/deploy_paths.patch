@@ -1,0 +1,20 @@
+--- a/deploy/deploy.sh
++++ b/deploy/deploy.sh
+@@ -6,7 +6,7 @@
+ ###############################################################################
+ netdev_file="/etc/systemd/network/90-wg0.netdev"
+ 
+-sudo cp ./wg0.netdev "$netdev_file"
++sudo cp /usr/share/wireguard-daemon/wg0.netdev "$netdev_file"
+ sudo chown root:systemd-network "$netdev_file"
+ sudo chmod 0640 "$netdev_file"
+ 
+@@ -20,7 +20,7 @@
+ fi
+ echo "ListenPort=$listen_port" | (sudo tee -a "$netdev_file" > /dev/null)
+ 
+-sudo cp ./wg0.network /etc/systemd/network/90-wg0.network
++sudo cp /usr/share/wireguard-daemon/wg0.network /etc/systemd/network/90-wg0.network
+ 
+ sudo systemctl enable systemd-networkd
+ sudo systemctl restart systemd-networkd

@@ -7,6 +7,7 @@ Priority: optional
 Build-Depends: debhelper-compat (= 13),
                dh-golang,
                dh-sysuser,
+               dh-exec,
                golang-any,
                golang-zx2c4-wireguard-wgctrl-dev,
                golang-github-google-go-cmp-dev
