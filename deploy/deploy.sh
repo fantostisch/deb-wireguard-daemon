@@ -2,14 +2,6 @@
 set -ex
 
 ###############################################################################
-# SOFTWARE
-###############################################################################
-sudo apt-get update
-sudo apt-get -y install linux-headers-generic
-sudo apt-get -y install golang-go
-sudo apt-get install wireguard
-
-###############################################################################
 # systemd
 ###############################################################################
 netdev_file="/etc/systemd/network/90-wg0.netdev"
@@ -32,5 +24,3 @@ sudo cp ./wg0.network /etc/systemd/network/90-wg0.network
 
 sudo systemctl enable systemd-networkd
 sudo systemctl restart systemd-networkd
-
-echo "Deployed successfully, a reboot might be necessary if the linux kernel headers were not already installed."
