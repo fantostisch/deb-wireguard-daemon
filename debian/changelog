@@ -1,3 +1,9 @@
+wireguard-daemon (0.0.2-1) sid; urgency=medium
+
+  * Package deploy script
+
+ -- Nick Aquina <nickaquina@gmail.com>  Mon, 09 Nov 2020 16:49:36 +0100
+
 wireguard-daemon (0.0.1-2) sid; urgency=medium
 
   * Create storage file on install for service
