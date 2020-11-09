@@ -96,7 +96,7 @@ sudo systemctl start wireguard-daemon
 sudo a2enconf vpn-server-api vpn-user-portal
 sudo systemctl reload apache2
 ```
-Add the following to `/etc/vpn-user-portal/config.php`:
+Add the following to `/etc/vpn-user-portal/config.php` and replace `vpn.example` with the hostname of your server:
 ```
 'WireGuard' => [
     'enabled' => true,
