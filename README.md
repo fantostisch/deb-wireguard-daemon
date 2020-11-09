@@ -96,6 +96,15 @@ sudo systemctl start wireguard-daemon
 sudo a2enconf vpn-server-api vpn-user-portal
 sudo systemctl reload apache2
 ```
+Add the following to `/etc/vpn-user-portal/config.php`:
+```
+'WireGuard' => [
+    'enabled' => true,
+    'hostName' => 'vpn.example',
+    'dns' => ['9.9.9.9'],
+  ],
+```
+For more options and an explanation take a look at [an example config](https://github.com/fantostisch/wireguard-vpn-user-portal/blob/c96685219a0f29066948dacd80a49db5b7a82e0f/config/config.php.example#L185).
 
 View the daemon log with:
 ```sh
