@@ -319,6 +319,7 @@ func testCreateConfigGenerateKeyPair(t *testing.T, username string) wgtypes.Key 
 
 	type response struct {
 		ClientPrivateKey string
+		ClientPublicKey  string
 		IP               string
 		ServerPublicKey  string
 	}
@@ -335,6 +336,7 @@ func testCreateConfigGenerateKeyPair(t *testing.T, username string) wgtypes.Key 
 
 		exp := response{
 			ClientPrivateKey: got.ClientPrivateKey, //todo: test
+			ClientPublicKey:  got.ClientPublicKey,  //todo: test
 			IP:               expIPString,
 			ServerPublicKey:  server.GetPublicKey().String(),
 		}

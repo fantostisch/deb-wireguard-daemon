@@ -26,6 +26,7 @@ func (h UserHandler) getConfigs(w http.ResponseWriter, username UserID) {
 
 type createConfigAndKeyPairResponse struct {
 	ClientPrivateKey PrivateKey `json:"clientPrivateKey"`
+	ClientPublicKey  PublicKey  `json:"clientPublicKey"`
 	IP               net.IP     `json:"ip"`
 	ServerPublicKey  PublicKey  `json:"serverPublicKey"`
 }
@@ -79,6 +80,7 @@ func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username
 
 	response := createConfigAndKeyPairResponse{
 		ClientPrivateKey: clientPrivateKey,
+		ClientPublicKey:  clientPublicKey,
 		IP:               createConfigResponse.IP,
 		ServerPublicKey:  createConfigResponse.ServerPublicKey,
 	}
