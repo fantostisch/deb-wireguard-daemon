@@ -101,7 +101,6 @@ func (s *FileStorage) getOrCreateUser(username UserID) *User {
 	return user
 }
 
-//todo: changing the name should not also update the ip
 func (s *FileStorage) UpdateOrCreateConfig(username UserID, publicKey PublicKey, config ClientConfig) (bool, error) {
 	s.dataMutex.Lock()
 

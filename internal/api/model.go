@@ -18,15 +18,13 @@ type User struct {
 }
 
 type ClientConfig struct {
-	Name     string `json:"name"`
 	IP       net.IP `json:"ip"`
 	Modified TimeJ  `json:"modified"`
 }
 
-func NewClientConfig(name string, ip net.IP) ClientConfig {
+func NewClientConfig(ip net.IP) ClientConfig {
 	now := TimeJ{time.Now().UTC()}
 	config := ClientConfig{
-		Name:     name,
 		IP:       ip,
 		Modified: now,
 	}
