@@ -105,7 +105,6 @@ func (h UserHandler) createConfig(w http.ResponseWriter, username UserID, public
 		http.Error(w, message, http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 }
 
 func (h UserHandler) deleteConfig(w http.ResponseWriter, username UserID, publicKey PublicKey) {
