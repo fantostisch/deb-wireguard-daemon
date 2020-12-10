@@ -6,7 +6,6 @@
       "isDisabled": false,
       "clients": {
         "igAsM9uQta1cZxYmvSz8o//O8gVVwR0oqDGp4Se4J1Q=": {
-          "name": "My Tablet",
           "ip": "10.0.0.4",
           "modified": "2020-10-02T13:05:42Z"
         }
@@ -16,12 +15,10 @@
       "isDisabled": false,
       "clients": {
         "0vGpC1HIMNmSwAfXU3UNboI+iaC48b4jjS+SSS2s0l0=": {
-          "name": "My Phone",
           "ip": "10.0.0.2",
           "modified": "2020-10-02T13:04:52Z"
         },
         "bOy9X7oTO/IDRulouAIPO/JimHuBxrF3jsx6XD/hsl4=": {
-          "name": "My Laptop",
           "ip": "10.0.0.3",
           "modified": "2020-10-02T13:05:12Z"
         }

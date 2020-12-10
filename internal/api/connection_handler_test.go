@@ -72,12 +72,12 @@ func TestGetConnections(t *testing.T) {
 			Users: map[UserID]*User{
 				peterUsername: &User{
 					Clients: map[PublicKey]ClientConfig{
-						PublicKey{petersPublicKey}: ClientConfig{Name: "Peters config"},
+						PublicKey{petersPublicKey}: ClientConfig{},
 					},
 				},
 				"Arthur": {
 					Clients: map[PublicKey]ClientConfig{
-						PublicKey{arthursPublicKey}: {Name: "Arthur's config"},
+						PublicKey{arthursPublicKey}: {},
 					},
 				},
 			},
@@ -93,7 +93,6 @@ func TestGetConnections(t *testing.T) {
 
 	type ConnectionString struct {
 		PublicKey  string   `json:"publicKey"`
-		Name       string   `json:"name"`
 		AllowedIPs []string `json:"allowedIPs"`
 	}
 
@@ -106,11 +105,9 @@ func TestGetConnections(t *testing.T) {
 	exp := map[string][]ConnectionString{
 		peterUsername: {ConnectionString{
 			PublicKey:  petersPublicKeyString,
-			Name:       "Peters config",
 			AllowedIPs: []string{"2.71.82.81/32"},
 		}}, "Arthur": {ConnectionString{
 			PublicKey:  arthursPublicKeyString,
-			Name:       "Arthur's config",
 			AllowedIPs: []string{"1.61.6.255/32"},
 		}},
 	}

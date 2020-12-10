@@ -26,6 +26,7 @@ func (h UserHandler) getConfigs(w http.ResponseWriter, username UserID) {
 
 type createConfigAndKeyPairResponse struct {
 	ClientPrivateKey PrivateKey `json:"clientPrivateKey"`
+	ClientPublicKey  PublicKey  `json:"clientPublicKey"`
 	IP               net.IP     `json:"ip"`
 	ServerPublicKey  PublicKey  `json:"serverPublicKey"`
 }
@@ -35,7 +36,7 @@ type createConfigResponse struct {
 	ServerPublicKey PublicKey `json:"serverPublicKey"`
 }
 
-func (h UserHandler) newConfig(username UserID, publicKey PublicKey, name string) (createConfigResponse, error) {
+func (h UserHandler) newConfig(username UserID, publicKey PublicKey) (createConfigResponse, error) {
 	var config ClientConfig
 
 	for {
@@ -43,7 +44,7 @@ func (h UserHandler) newConfig(username UserID, publicKey PublicKey, name string
 		if ip == nil || err != nil {
 			return createConfigResponse{}, fmt.Errorf("error getting IP Address: %w", err)
 		}
-		config = NewClientConfig(name, ip)
+		config = NewClientConfig(ip)
 		success, err := h.Server.Storage.UpdateOrCreateConfig(username, publicKey, config)
 		if err != nil {
 			return createConfigResponse{}, fmt.Errorf("error saving config: %w", err)
@@ -62,7 +63,7 @@ func (h UserHandler) newConfig(username UserID, publicKey PublicKey, name string
 	}, nil
 }
 
-func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username UserID, name string) {
+func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username UserID) {
 	clientPrivateKey, err := h.Server.wgManager.GeneratePrivateKey()
 	if err != nil {
 		message := fmt.Sprintf("Error generating private key: %s", err)
@@ -70,7 +71,7 @@ func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username
 		return
 	}
 	clientPublicKey := clientPrivateKey.PublicKey()
-	createConfigResponse, err := h.newConfig(username, clientPublicKey, name)
+	createConfigResponse, err := h.newConfig(username, clientPublicKey)
 	if err != nil {
 		message := fmt.Sprintf("Error creating config: %s", err)
 		http.Error(w, message, http.StatusInternalServerError)
@@ -79,6 +80,7 @@ func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username
 
 	response := createConfigAndKeyPairResponse{
 		ClientPrivateKey: clientPrivateKey,
+		ClientPublicKey:  clientPublicKey,
 		IP:               createConfigResponse.IP,
 		ServerPublicKey:  createConfigResponse.ServerPublicKey,
 	}
@@ -90,8 +92,8 @@ func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username
 	}
 }
 
-func (h UserHandler) createConfig(w http.ResponseWriter, username UserID, publicKey PublicKey, name string) {
-	response, err := h.newConfig(username, publicKey, name)
+func (h UserHandler) createConfig(w http.ResponseWriter, username UserID, publicKey PublicKey) {
+	response, err := h.newConfig(username, publicKey)
 	if err != nil {
 		message := fmt.Sprintf("Error creating config: %s", err)
 		http.Error(w, message, http.StatusInternalServerError)
@@ -103,7 +105,6 @@ func (h UserHandler) createConfig(w http.ResponseWriter, username UserID, public
 		http.Error(w, message, http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 }
 
 func (h UserHandler) deleteConfig(w http.ResponseWriter, username UserID, publicKey PublicKey) {

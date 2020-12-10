@@ -94,11 +94,7 @@ func (h API) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			if !e {
 				return
 			}
-			name := getRequiredPOSTValue(w, req, "name")
-			if name == "" {
-				return
-			}
-			h.UserHandler.createConfig(w, username, publicKey, name)
+			h.UserHandler.createConfig(w, username, publicKey)
 
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -112,11 +108,7 @@ func (h API) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 		switch req.Method {
 		case http.MethodPost:
-			name := getRequiredPOSTValue(w, req, "name")
-			if name == "" {
-				return
-			}
-			h.UserHandler.createConfigGenerateKeyPair(w, username, name)
+			h.UserHandler.createConfigGenerateKeyPair(w, username)
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return

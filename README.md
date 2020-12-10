@@ -11,8 +11,8 @@ This project is used by the
 | Method | URL                         | POST Data                              | Description                                                                                                  |
 |--------|-----------------------------|----------------------------------------|--------------------------------------------------------------------------------------------------------------|
 | GET    | /configs?user_id=foo        |                                        | List all configs of the user. Return empty list if no configs found.                                         |
-| POST   | /create_config              | user_id=foo&public_key=ABC&name=Laptop | Create client config. Creating 2 client configs with the same public key will overwrite the existing config. |
-| POST   | /create_config_and_key_pair | user_id=foo&name=Phone                 | Create client config. Let the server create a public private key pair.                                       |
+| POST   | /create_config              | user_id=foo&public_key=ABC             | Create client config. Creating 2 client configs with the same public key will overwrite the existing config. |
+| POST   | /create_config_and_key_pair | user_id=foo                            | Create client config. Let the server create a public private key pair.                                       |
 | POST   | /delete_config              | user_id=foo&public_key=ABC             | Delete client config. Responds config_not_found  error if config not found.                                  |
 | GET    | /client_connections         |                                        | Get clients that successfully send or received a packet in the last 3 minutes.                               |
 | POST   | /disable_user               | user_id=foo                            | Disable user. Responds user_already_disabled error if user is already disabled.                              |
@@ -96,6 +96,15 @@ sudo systemctl start wireguard-daemon
 sudo a2enconf vpn-server-api vpn-user-portal
 sudo systemctl reload apache2
 ```
+Add the following to `/etc/vpn-user-portal/config.php` and replace `vpn.example` with the hostname of your server:
+```
+'WireGuard' => [
+    'enabled' => true,
+    'hostName' => 'vpn.example',
+    'dns' => ['9.9.9.9'],
+  ],
+```
+For more options and an explanation take a look at [an example config](https://github.com/fantostisch/wireguard-vpn-user-portal/blob/c96685219a0f29066948dacd80a49db5b7a82e0f/config/config.php.example#L185).
 
 View the daemon log with:
 ```sh

@@ -77,17 +77,14 @@ func newServer(server *Server) {
 					peterUsername: &User{
 						Clients: map[PublicKey]ClientConfig{
 							PublicKey{petersPublicKey1}: ClientConfig{
-								Name:     "Client config 1",
 								IP:       net.IPv4(10, 0, 0, 1),
 								Modified: TimeJ{time.Date(2020, 10, 13, 17, 52, 14, 4, time.UTC)},
 							},
 							PublicKey{petersPublicKey2}: ClientConfig{
-								Name:     "Client config 2",
 								IP:       net.IPv4(10, 0, 0, 2),
 								Modified: TimeJ{time.Date(2020, 10, 13, 17, 53, 14, 4, time.UTC)},
 							},
 							PublicKey{petersPublicKey3}: ClientConfig{
-								Name:     "Client config 3",
 								IP:       net.IPv4(10, 0, 0, 3),
 								Modified: TimeJ{time.Date(2020, 10, 13, 17, 54, 14, 4, time.UTC)},
 							},
@@ -137,7 +134,6 @@ func testError(t *testing.T, w httptest.ResponseRecorder, errorType string) {
 }
 
 type ClientConfigStrings struct {
-	Name     string `json:"name"`
 	IP       string `json:"ip"`
 	Modified string `json:"modified"`
 }
@@ -159,17 +155,14 @@ func TestGetConfigs(t *testing.T) {
 
 	exp := map[string]*ClientConfigStrings{
 		petersPublicKey1String: {
-			Name:     "Client config 1",
 			IP:       "10.0.0.1",
 			Modified: "2020-10-13T17:52:14Z",
 		},
 		petersPublicKey2String: {
-			Name:     "Client config 2",
 			IP:       "10.0.0.2",
 			Modified: "2020-10-13T17:53:14Z",
 		},
 		petersPublicKey3String: {
-			Name:     "Client config 3",
 			IP:       "10.0.0.3",
 			Modified: "2020-10-13T17:54:14Z",
 		},
@@ -220,7 +213,6 @@ func TestEmptyUsername(t *testing.T) {
 	respRec := httptest.NewRecorder()
 	requestBody := url.Values{
 		"user_id": {""},
-		"name":    {"Name1"},
 	}
 	body := bytes.NewBufferString(requestBody.Encode())
 	req, _ := http.NewRequest(http.MethodPost, "/create_config_and_key_pair", body)
@@ -232,13 +224,10 @@ func TestEmptyUsername(t *testing.T) {
 
 //todo: test creating config multiple times with same public key
 func testCreateConfig(t *testing.T, username string) {
-	expName := "+/ My Little Phone 16 +/"
-
 	publicKeyString := "RuvRcz3zuwz/3xMqqh2ZvL+NT3W2v6J60rMnHtRiOE8="
 	requestBody := url.Values{
 		"user_id":    {username},
 		"public_key": {publicKeyString},
-		"name":       {expName},
 	}
 	req, _ := http.NewRequest(http.MethodPost, "/create_config", bytes.NewBufferString(requestBody.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -276,7 +265,6 @@ func testCreateConfig(t *testing.T, username string) {
 		got := server.Storage.data.Users[UserID(username)].Clients[PublicKey{publicKey}]
 
 		exp := ClientConfig{
-			Name:     expName,
 			IP:       net.ParseIP(expIPString),
 			Modified: got.Modified, //todo: test
 		}
@@ -302,10 +290,7 @@ func TestCreateConfig(t *testing.T) {
 }
 
 func testCreateConfigGenerateKeyPair(t *testing.T, username string) wgtypes.Key {
-	expName := "+/ My Little Phone 16 +/"
-
 	requestBody := url.Values{
-		"name":    {expName},
 		"user_id": {username},
 	}
 	requestBodyString := bytes.NewBufferString(requestBody.Encode())
@@ -319,6 +304,7 @@ func testCreateConfigGenerateKeyPair(t *testing.T, username string) wgtypes.Key 
 
 	type response struct {
 		ClientPrivateKey string
+		ClientPublicKey  string
 		IP               string
 		ServerPublicKey  string
 	}
@@ -335,6 +321,7 @@ func testCreateConfigGenerateKeyPair(t *testing.T, username string) wgtypes.Key 
 
 		exp := response{
 			ClientPrivateKey: got.ClientPrivateKey, //todo: test
+			ClientPublicKey:  got.ClientPublicKey,  //todo: test
 			IP:               expIPString,
 			ServerPublicKey:  server.GetPublicKey().String(),
 		}
@@ -359,7 +346,6 @@ func testCreateConfigGenerateKeyPair(t *testing.T, username string) wgtypes.Key 
 		got := server.Storage.data.Users[UserID(username)].Clients[PublicKey{publicKey}]
 
 		exp := ClientConfig{
-			Name:     expName,
 			IP:       net.ParseIP(expIPString),
 			Modified: got.Modified, //todo: test
 		}

@@ -15,7 +15,6 @@ type ConnectionHandler struct {
 
 type Connection struct {
 	PublicKey  PublicKey `json:"publicKey"`
-	Name       string    `json:"name"`
 	AllowedIPs []string  `json:"allowedIPs"`
 }
 
@@ -31,7 +30,7 @@ func (h ConnectionHandler) getConnections(w http.ResponseWriter) {
 
 	for _, peer := range peers {
 		publicKey := PublicKey{peer.PublicKey}
-		username, config, err := h.storage.GetUsernameAndConfig(publicKey)
+		username, _, err := h.storage.GetUsernameAndConfig(publicKey)
 		if err != nil {
 			message := fmt.Sprintf("Error no user found for public key: %s", publicKey)
 			http.Error(w, message, http.StatusInternalServerError)
@@ -48,7 +47,6 @@ func (h ConnectionHandler) getConnections(w http.ResponseWriter) {
 		}
 		*userPeerList = append(*userPeerList, Connection{
 			PublicKey:  publicKey,
-			Name:       config.Name,
 			AllowedIPs: allowedIPsString,
 		})
 	}
