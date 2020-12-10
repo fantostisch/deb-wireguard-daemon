@@ -1,3 +1,9 @@
+wireguard-daemon (0.0.3-1) sid; urgency=medium
+
+  * New upstream release
+
+ -- Nick Aquina <nickaquina@gmail.com>  Thu, 10 Dec 2020 21:02:41 +0100
+
 wireguard-daemon (0.0.2-1) sid; urgency=medium
 
   * Package deploy script
