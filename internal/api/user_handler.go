@@ -132,7 +132,7 @@ func (h UserHandler) deleteConfig(w http.ResponseWriter, username UserID, public
 }
 
 func (h UserHandler) setDisabledHTTP(w http.ResponseWriter, username UserID, disabled bool,
-	errorType string, conflictMessage string) {
+	apiError Error, conflictMessage string) {
 
 	valueChanged, err := h.Server.Storage.SetDisabled(username, disabled)
 	if err != nil {
@@ -141,7 +141,7 @@ func (h UserHandler) setDisabledHTTP(w http.ResponseWriter, username UserID, dis
 		return
 	}
 	if !valueChanged {
-		replyWithError(w, errorType, conflictMessage)
+		replyWithError(w, apiError, conflictMessage)
 		return
 	}
 

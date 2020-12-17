@@ -6,23 +6,27 @@ import (
 	"net/http"
 )
 
-const (
-	MissingPostParameter = "missing_post_parameter"
-	UserIDNotSupplied    = "user_id_not_supplied"
-	InvalidPublicKey     = "invalid_public_key"
-	ConfigNotFound       = "config_not_found"
-	UserAlreadyEnabled   = "user_already_enabled"
-	UserAlreadyDisabled  = "user_already_disabled"
+var (
+	MissingPostParameter = Error{"missing_post_parameter"}
+	UserIDNotSupplied    = Error{"user_id_not_supplied"}
+	InvalidPublicKey     = Error{"invalid_public_key"}
+	ConfigNotFound       = Error{"config_not_found"}
+	UserAlreadyEnabled   = Error{"user_already_enabled"}
+	UserAlreadyDisabled  = Error{"user_already_disabled"}
 )
 
 type Error struct {
+	Name string
+}
+
+type JSONError struct {
 	ErrorType        string `json:"errorType"`
 	ErrorDescription string `json:"errorDescription"`
 }
 
-func replyWithError(w http.ResponseWriter, errorType string, message string) {
-	apiError := Error{
-		ErrorType:        errorType,
+func replyWithError(w http.ResponseWriter, error Error, message string) {
+	apiError := JSONError{
+		ErrorType:        error.Name,
 		ErrorDescription: message,
 	}
 
