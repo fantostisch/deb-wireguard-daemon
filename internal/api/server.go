@@ -1,7 +1,6 @@
 package api
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -19,7 +18,7 @@ type Server struct {
 }
 
 func NewServer(storage *FileStorage, wgManager wgmanager.IWGManager, wgInterface string) (*Server, error) {
-	IPAddr, ipNet, err := net.ParseCIDR("10.0.0.1/8")
+	IPAddr, ipNet, err := net.ParseCIDR("10.0.0.1/8") // todo: ip range should be configurable
 	if err != nil {
 		return nil, fmt.Errorf("error parsing CIDR notation: %w", err)
 	}
@@ -57,7 +56,7 @@ func (s *Server) GetPublicKey() PublicKey {
 	return s.wgPublicKey
 }
 
-func (s *Server) allocateIP() (net.IP, error) {
+func (s *Server) allocateIP() (net.IP, *Error) {
 	allocatedIPs := s.Storage.GetAllocatedIPs()
 	allocatedIPs = append(allocatedIPs, s.IPAddr)
 
@@ -79,7 +78,7 @@ func (s *Server) allocateIP() (net.IP, error) {
 			return ip, nil
 		}
 	}
-	return nil, errors.New("unable to allocate IP Address, range exhausted")
+	return nil, &NoIPAvailable
 }
 
 func (s *Server) configureWG() error {
