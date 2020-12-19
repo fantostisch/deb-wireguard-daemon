@@ -40,9 +40,9 @@ func (h UserHandler) newConfig(username UserID, publicKey PublicKey) (createConf
 	var config ClientConfig
 
 	for {
-		ip, err := h.Server.allocateIP()
-		if ip == nil || err != nil {
-			return createConfigResponse{}, fmt.Errorf("error getting IP Address: %w", err)
+		ip, noIPAvailableError := h.Server.allocateIP()
+		if ip == nil || noIPAvailableError != nil {
+			return createConfigResponse{}, noIPAvailableError
 		}
 		config = NewClientConfig(ip)
 		success, err := h.Server.Storage.UpdateOrCreateConfig(username, publicKey, config)
@@ -73,8 +73,12 @@ func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username
 	clientPublicKey := clientPrivateKey.PublicKey()
 	createConfigResponse, err := h.newConfig(username, clientPublicKey)
 	if err != nil {
-		message := fmt.Sprintf("Error creating config: %s", err)
-		http.Error(w, message, http.StatusInternalServerError)
+		if err.Error() == NoIPAvailable.Error() {
+			replyWithError(w, NoIPAvailable, "Could not create config.")
+		} else {
+			message := fmt.Sprintf("Error creating config: %s", err)
+			http.Error(w, message, http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -95,8 +99,12 @@ func (h UserHandler) createConfigGenerateKeyPair(w http.ResponseWriter, username
 func (h UserHandler) createConfig(w http.ResponseWriter, username UserID, publicKey PublicKey) {
 	response, err := h.newConfig(username, publicKey)
 	if err != nil {
-		message := fmt.Sprintf("Error creating config: %s", err)
-		http.Error(w, message, http.StatusInternalServerError)
+		if err.Error() == NoIPAvailable.Error() {
+			replyWithError(w, NoIPAvailable, "Could not create config.")
+		} else {
+			message := fmt.Sprintf("Error creating config: %s", err)
+			http.Error(w, message, http.StatusInternalServerError)
+		}
 		return
 	}
 

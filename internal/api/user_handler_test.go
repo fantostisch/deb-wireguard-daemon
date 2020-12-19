@@ -122,7 +122,7 @@ func testError(t *testing.T, w httptest.ResponseRecorder, apiError *Error) {
 		testHTTPStatus(t, w, http.StatusOK)
 		return
 	}
-	switch apiError.Name {
+	switch apiError.Type {
 	case "internal_server_error":
 		testHTTPStatus(t, w, http.StatusInternalServerError)
 	default:
@@ -225,8 +225,7 @@ func TestEmptyUsername(t *testing.T) {
 }
 
 //todo: test creating config multiple times with same public key
-func testCreateConfig(t *testing.T, username string) {
-	publicKeyString := "RuvRcz3zuwz/3xMqqh2ZvL+NT3W2v6J60rMnHtRiOE8="
+func testCreateConfig(t *testing.T, username string, publicKeyString string, apiError *Error) {
 	requestBody := url.Values{
 		"user_id":    {username},
 		"public_key": {publicKeyString},
@@ -237,7 +236,11 @@ func testCreateConfig(t *testing.T, username string) {
 	respRec := httptest.NewRecorder()
 	apiRouter.ServeHTTP(respRec, req)
 
-	testHTTPStatus(t, *respRec, http.StatusOK)
+	testError(t, *respRec, apiError)
+
+	if apiError != nil {
+		return
+	}
 
 	type response struct {
 		IP              string
@@ -279,19 +282,20 @@ func testCreateConfig(t *testing.T, username string) {
 
 func TestCreateConfig(t *testing.T) {
 	var tests = []struct {
-		testName string
-		username string
+		testName        string
+		username        string
+		publicKeyString string
 	}{
-		{"Create config for new user", "Emma"},
-		{"Create config for existing user", peterUsername},
+		{"Create config for new user", "Emma", "RuvRcz3zuwz/3xMqqh2ZvL+NT3W2v6J60rMnHtRiOE8="},
+		{"Create config for existing user", peterUsername, "la7/0uhQGn99wdqimEPvfmLOl4u9BUlx5BhLpZLw0QA="},
 	}
 	for _, tt := range tests {
 		setup()
-		t.Run(tt.testName, func(t *testing.T) { testCreateConfig(t, tt.username) })
+		t.Run(tt.testName, func(t *testing.T) { testCreateConfig(t, tt.username, tt.publicKeyString, nil) })
 	}
 }
 
-func testCreateConfigGenerateKeyPair(t *testing.T, username string) wgtypes.Key {
+func testCreateConfigGenerateKeyPairError(t *testing.T, username string, apiError *Error) *httptest.ResponseRecorder {
 	requestBody := url.Values{
 		"user_id": {username},
 	}
@@ -302,7 +306,13 @@ func testCreateConfigGenerateKeyPair(t *testing.T, username string) wgtypes.Key 
 	respRec := httptest.NewRecorder()
 	apiRouter.ServeHTTP(respRec, req)
 
-	testHTTPStatus(t, *respRec, http.StatusOK)
+	testError(t, *respRec, apiError)
+
+	return respRec
+}
+
+func testCreateConfigGenerateKeyPair(t *testing.T, username string) wgtypes.Key {
+	respRec := testCreateConfigGenerateKeyPairError(t, username, nil)
 
 	type response struct {
 		ClientPrivateKey string
@@ -462,4 +472,25 @@ func TestWireGuardReconfigureError(t *testing.T) {
 
 	testDisableUser(t, peterUsername, &Error{"internal_server_error"})
 	testEnableUser(t, peterUsername, &Error{"internal_server_error"})
+}
+
+func TestNoIPAvailableError(t *testing.T) {
+	setup()
+	var ipAddr, ipNet, _ = net.ParseCIDR("10.0.0.1/29")
+	server.IPAddr = ipAddr
+	server.clientIPRange = ipNet
+
+	testCreateConfig(t, "Alex", "gldbEWimMuf1qloClRRPEmlMYtJn2dfZg8g2Yjh3bTQ=", nil)
+	expIPString = "10.0.0.5"
+	testCreateConfig(t, "Alex", "DZPvQpSrkz9OZiBNIoVA8Pj0VcUBfkzYhLLXmbJSFAk=", nil)
+	expIPString = "10.0.0.6"
+	testCreateConfigGenerateKeyPair(t, "Alex")
+	expIPString = "10.0.0.7"
+	testCreateConfig(t, "Edward", "FSOJ4iX90JLnTix9Se98NXsUOuD9sIQ5aExE9vDk7Xk=", nil)
+	expIPString = "10.0.0.8"
+	testCreateConfig(t, "Nick", "FSOJ4iX90JLnTix9Se98NXsUOuD9sIQ5aExE9vDk7Xk=", nil)
+	expIPString = "10.0.0.9"
+
+	testCreateConfig(t, "Nick", "ay5VxKyMf3vD2fe1szrbWGO3m2VcZ0Qqnul8PE95D1s=", &NoIPAvailable)
+	testCreateConfigGenerateKeyPairError(t, "Nick", &NoIPAvailable)
 }

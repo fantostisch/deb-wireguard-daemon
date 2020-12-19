@@ -13,10 +13,15 @@ var (
 	ConfigNotFound       = Error{"config_not_found"}
 	UserAlreadyEnabled   = Error{"user_already_enabled"}
 	UserAlreadyDisabled  = Error{"user_already_disabled"}
+	NoIPAvailable        = Error{"no_ip_available"}
 )
 
 type Error struct {
-	Name string
+	Type string
+}
+
+func (e Error) Error() string {
+	return e.Type
 }
 
 type JSONError struct {
@@ -24,15 +29,15 @@ type JSONError struct {
 	ErrorDescription string `json:"errorDescription"`
 }
 
-func replyWithError(w http.ResponseWriter, error Error, message string) {
-	apiError := JSONError{
-		ErrorType:        error.Name,
+func replyWithError(w http.ResponseWriter, apiError Error, message string) {
+	jsonAPIError := JSONError{
+		ErrorType:        apiError.Type,
 		ErrorDescription: message,
 	}
 
 	w.WriteHeader(http.StatusBadRequest)
 
-	if err := json.NewEncoder(w).Encode(apiError); err != nil {
+	if err := json.NewEncoder(w).Encode(jsonAPIError); err != nil {
 		message := fmt.Sprintf("Error encoding response as JSON: %s", err)
 		http.Error(w, message, http.StatusInternalServerError)
 		return
