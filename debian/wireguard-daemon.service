@@ -1,5 +1,6 @@
 [Unit]
 Description=Daemon to manage WireGuard
+After=network.target
 
 [Service]
 Environment=LISTEN=127.0.0.1:8080 STORAGE_FILE="/var/lib/wireguard-daemon/storage.json"
